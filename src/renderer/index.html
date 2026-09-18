@@ -9,64 +9,64 @@
   <body>
     <header class="app-header">
       <div class="brand"><span class="logo"><i></i></span><strong>ClickFilm</strong><em>ALPHA</em></div>
-      <div id="privacy-pill" class="privacy-pill"><span></span> Everything stays on this computer</div>
+      <div class="header-actions"><label class="language-picker"><span data-i18n="language">Language</span><select id="language-select"><option value="en">English</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option></select></label><div id="privacy-pill" class="privacy-pill"><span></span><b data-i18n="privacy">Everything stays on this computer</b></div></div>
     </header>
 
     <main>
       <section id="welcome-view" class="welcome-view">
         <div class="intro">
-          <p class="eyebrow">SCREEN RECORDING, AUTOMATICALLY POLISHED</p>
-          <h1>Record normally.<br><span>Look professionally edited.</span></h1>
-          <p>Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.</p>
+          <p class="eyebrow" data-i18n="eyebrow">SCREEN RECORDING, AUTOMATICALLY POLISHED</p>
+          <h1><span class="hero-primary" data-i18n="hero1">Record normally.</span><br><span data-i18n="hero2">Look professionally edited.</span></h1>
+          <p data-i18n="intro">Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.</p>
         </div>
 
-        <div class="source-heading"><div><strong>Choose a window to record</strong><small>Only this window will appear in the video</small></div><button id="refresh-sources" class="ghost-button">Refresh</button></div>
-        <div id="source-list" class="source-list"><p class="source-loading">Finding open windows…</p></div>
+        <div class="source-heading"><div><strong data-i18n="chooseWindow">Choose a window to record</strong><small data-i18n="chooseWindowHelp">Only this window will appear in the video</small></div><button id="refresh-sources" class="ghost-button" data-i18n="refresh">Refresh</button></div>
+        <div id="source-list" class="source-list"><p class="source-loading" data-i18n="findingWindows">Finding open windows…</p></div>
 
         <div class="audio-picker">
-          <div class="source-heading"><div><strong>Choose app audio</strong><small>Select any number of apps, or none for a silent recording</small></div><button id="refresh-audio" class="ghost-button">Refresh</button></div>
-          <div id="audio-list" class="audio-list"><p class="source-loading">Finding apps…</p></div>
-          <p id="audio-support" class="audio-support">Only checked apps will be included. Other system sounds are excluded.</p>
+          <div class="source-heading"><div><strong data-i18n="chooseAudio">Choose app audio</strong><small data-i18n="chooseAudioHelp">Select any number of apps, or none for a silent recording</small></div><button id="refresh-audio" class="ghost-button" data-i18n="refresh">Refresh</button></div>
+          <div id="audio-list" class="audio-list"><p class="source-loading" data-i18n="findingApps">Finding apps…</p></div>
+          <p id="audio-support" class="audio-support" data-i18n="audioSupport">Only checked apps will be included. Other system sounds are excluded.</p>
         </div>
 
         <button id="start-button" class="record-card" disabled>
           <span class="record-icon"><i></i></span>
-          <span><strong>Start recording</strong><small id="selected-source-label">Select a window above first</small></span>
+          <span><strong data-i18n="startRecording">Start recording</strong><small id="selected-source-label" data-i18n="selectWindowFirst">Select a window above first</small></span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
 
         <div class="hotkey-setting">
-          <div><strong>Recording hotkey</strong><small>Works while ClickFilm is in the background</small></div>
+          <div><strong data-i18n="recordingHotkey">Recording hotkey</strong><small data-i18n="hotkeyHelp">Works while ClickFilm is in the background</small></div>
           <button id="hotkey-button" class="hotkey-button"><kbd>Ctrl</kbd><i>+</i><kbd>Shift</kbd><i>+</i><kbd>R</kbd></button>
-          <span id="hotkey-status" class="hotkey-status">Click, then press your shortcut</span>
+          <span id="hotkey-status" class="hotkey-status" data-i18n="hotkeyPrompt">Click, then press your shortcut</span>
         </div>
 
         <div class="steps">
-          <div><b>01</b><strong>Record your screen</strong><span>Use your app naturally.</span></div>
-          <div><b>02</b><strong>Design your zooms</strong><span>Choose the area, timing, and strength.</span></div>
-          <div><b>03</b><strong>Export and share</strong><span>Ready-to-post MP4.</span></div>
+          <div><b>01</b><strong data-i18n="step1">Record your screen</strong><span data-i18n="step1Help">Use your app naturally.</span></div>
+          <div><b>02</b><strong data-i18n="step2">Design your zooms</strong><span data-i18n="step2Help">Choose the area, timing, and strength.</span></div>
+          <div><b>03</b><strong data-i18n="step3">Export and share</strong><span data-i18n="step3Help">Ready-to-post MP4.</span></div>
         </div>
       </section>
 
       <section id="recording-view" class="recording-view hidden">
-        <div class="recording-status"><span class="pulse"></span><strong>Recording</strong><time id="timer">00:00</time></div>
-        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption">Record naturally — zooms are added later</div></div>
+        <div class="recording-status"><span class="pulse"></span><strong data-i18n="recording">Recording</strong><time id="timer">00:00</time></div>
+        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption" data-i18n="recordNaturally">Record naturally — zooms are added later</div></div>
         <div class="recording-actions">
-          <button id="stop-button" class="stop-button"><span></span> Stop recording</button>
+          <button id="stop-button" class="stop-button"><span></span><b data-i18n="stopRecording">Stop recording</b></button>
         </div>
-        <p class="hint">Your recording stays untouched until you customise it in the editor.</p>
+        <p class="hint" data-i18n="recordingHint">Your recording stays untouched until you customise it in the editor.</p>
       </section>
 
       <section id="editor-view" class="editor-view hidden">
         <div class="editor-topbar">
-          <div><p class="eyebrow">PROJECT</p><h2>Untitled recording</h2></div>
-          <div class="topbar-actions"><button id="new-button" class="ghost-button">New recording</button><button id="export-button" class="export-button">Export MP4</button></div>
+          <div><p class="eyebrow" data-i18n="project">PROJECT</p><h2 data-i18n="untitled">Untitled recording</h2></div>
+          <div class="topbar-actions"><button id="new-button" class="ghost-button" data-i18n="newRecording">New recording</button><button id="export-button" class="export-button" data-i18n="exportMp4">Export MP4</button></div>
         </div>
 
         <div class="editor-grid">
           <aside class="settings-panel">
             <div class="setting-group">
-              <label>Format</label>
+              <label data-i18n="format">Format</label>
               <div class="segmented" id="format-control">
                 <button class="active" data-format="landscape">16:9</button>
                 <button data-format="portrait">9:16</button>
@@ -74,32 +74,32 @@
               </div>
             </div>
             <div class="setting-group">
-              <label>Background</label>
+              <label data-i18n="background">Background</label>
               <div class="swatches" id="background-control">
                 <button class="swatch active" data-background="aurora" style="--swatch:linear-gradient(135deg,#5f64f5,#c45ddd)"></button>
                 <button class="swatch" data-background="ocean" style="--swatch:linear-gradient(135deg,#076585,#45b5aa)"></button>
                 <button class="swatch" data-background="sunset" style="--swatch:linear-gradient(135deg,#f857a6,#ff5858)"></button>
                 <button class="swatch" data-background="midnight" style="--swatch:#111625"></button>
-                <button class="swatch no-background" data-background="none" title="No background — full resolution">None</button>
+                <button class="swatch no-background" data-background="none" title="No background — full resolution" data-i18n="none">None</button>
               </div>
-              <p class="setting-help background-help">Choose None to preserve the recording's native resolution and aspect ratio.</p>
+              <p class="setting-help background-help" data-i18n="noneHelp">Choose None to preserve the recording's native resolution and aspect ratio.</p>
             </div>
             <div class="setting-group zoom-editor">
-              <div class="setting-heading"><label>Custom zooms</label><button id="add-zoom" class="mini-button">+ Add zoom</button></div>
-              <p id="zoom-empty" class="setting-help">Move the playhead, add a zoom, then click the preview to choose its focus.</p>
+              <div class="setting-heading"><label data-i18n="customZooms">Custom zooms</label><button id="add-zoom" class="mini-button" data-i18n="addZoom">+ Add zoom</button></div>
+              <p id="zoom-empty" class="setting-help" data-i18n="zoomHelp">Move the playhead, add a zoom, then click the preview to choose its focus.</p>
               <div id="zoom-controls" class="zoom-controls hidden">
-                <label for="zoom-start">Start <output id="zoom-start-output">0:00.0</output></label>
+                <label for="zoom-start"><span data-i18n="start">Start</span><output id="zoom-start-output">0:00.0</output></label>
                 <input id="zoom-start" type="range" min="0" max="1" value="0" step="0.1" />
-                <label for="zoom-duration">Duration <output id="zoom-duration-output">1.5s</output></label>
+                <label for="zoom-duration"><span data-i18n="duration">Duration</span><output id="zoom-duration-output">1.5s</output></label>
                 <input id="zoom-duration" type="range" min="0.5" max="5" value="1.5" step="0.1" />
-                <label for="zoom-strength">Strength <output id="zoom-output">1.65×</output></label>
+                <label for="zoom-strength"><span data-i18n="strength">Strength</span><output id="zoom-output">1.65×</output></label>
                 <input id="zoom-strength" type="range" min="1.1" max="3" value="1.65" step="0.05" />
-                <button id="delete-zoom" class="delete-button">Delete selected zoom</button>
+                <button id="delete-zoom" class="delete-button" data-i18n="deleteZoom">Delete selected zoom</button>
               </div>
             </div>
             <div class="setting-group stats">
-              <span><strong id="zoom-count">0</strong> custom zooms</span>
-              <span><strong id="duration-label">0:00</strong> duration</span>
+              <span><strong id="zoom-count">0</strong> <b data-i18n="customZoomsStat">custom zooms</b></span>
+              <span><strong id="duration-label">0:00</strong> <b data-i18n="durationStat">duration</b></span>
             </div>
           </aside>
 
