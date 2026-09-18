@@ -19,6 +19,8 @@ const focusTarget = document.querySelector('#focus-target');
 const zoomControls = document.querySelector('#zoom-controls');
 const hotkeyButton = document.querySelector('#hotkey-button');
 const hotkeyStatus = document.querySelector('#hotkey-status');
+const sourceList = document.querySelector('#source-list');
+const selectedSourceLabel = document.querySelector('#selected-source-label');
 
 let captureStream;
 let recorder;
@@ -28,6 +30,8 @@ let timerInterval;
 let rawRecordingUrl;
 let zoomMarkers = [];
 let selectedZoomId = null;
+let selectedSourceId = null;
+let capturingHotkey = false;
 let settings = { format: 'landscape', background: 'aurora' };
 
 const backgrounds = {
@@ -48,6 +52,7 @@ document.querySelector('#delete-zoom').addEventListener('click', deleteSelectedZ
 document.querySelector('#new-button').addEventListener('click', resetProject);
 document.querySelector('#export-button').addEventListener('click', exportVideo);
 hotkeyButton.addEventListener('click', beginHotkeyCapture);
+document.querySelector('#refresh-sources').addEventListener('click', loadCaptureSources);
 window.clickfilm.onRecordingToggle(() => {
   if (recorder?.state === 'recording') stopRecording();
   else if (!views.recording.classList.contains('hidden')) return;
@@ -58,17 +63,23 @@ window.clickfilm.onRecordingToggle(() => {
 
 const savedHotkey = localStorage.getItem('recordingHotkey') || 'CommandOrControl+Shift+R';
 setHotkey(savedHotkey, false);
+loadCaptureSources();
 
 function beginHotkeyCapture() {
+  capturingHotkey = true;
   hotkeyButton.classList.add('listening');
   hotkeyButton.textContent = 'Press shortcut…';
   hotkeyStatus.textContent = 'Use Ctrl, Alt, Shift, or the Windows key plus another key.';
-  window.addEventListener('keydown', captureHotkey, { once: true, capture: true });
+  window.addEventListener('keydown', captureHotkey, { capture: true });
 }
 
 function captureHotkey(event) {
+  if (!capturingHotkey) return;
   event.preventDefault();
   event.stopPropagation();
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return;
+  capturingHotkey = false;
+  window.removeEventListener('keydown', captureHotkey, { capture: true });
   const accelerator = acceleratorFromEvent(event);
   if (!accelerator) {
     hotkeyButton.classList.remove('listening');
@@ -77,6 +88,49 @@ function captureHotkey(event) {
     return;
   }
   setHotkey(accelerator, true);
+}
+
+async function loadCaptureSources() {
+  startButton.disabled = true;
+  selectedSourceId = null;
+  selectedSourceLabel.textContent = 'Select a window above first';
+  sourceList.innerHTML = '<p class="source-loading">Finding open windows…</p>';
+  try {
+    const sources = await window.clickfilm.listCaptureSources();
+    sourceList.replaceChildren();
+    if (!sources.length) {
+      sourceList.innerHTML = '<p class="source-loading">No recordable windows found. Open the app you want to record, then press Refresh.</p>';
+      return;
+    }
+    sources.forEach(source => {
+      const button = document.createElement('button');
+      button.className = 'source-card';
+      button.type = 'button';
+      const image = document.createElement('img');
+      image.src = source.thumbnail;
+      image.alt = '';
+      const label = document.createElement('span');
+      label.textContent = source.name;
+      button.append(image, label);
+      button.addEventListener('click', () => selectCaptureSource(source, button));
+      sourceList.appendChild(button);
+    });
+  } catch (error) {
+    sourceList.innerHTML = `<p class="source-loading">Could not list windows: ${escapeText(error.message)}</p>`;
+  }
+}
+
+async function selectCaptureSource(source, button) {
+  const selected = await window.clickfilm.selectCaptureSource(source.id);
+  if (!selected) return;
+  selectedSourceId = source.id;
+  sourceList.querySelectorAll('.source-card').forEach(card => card.classList.toggle('selected', card === button));
+  selectedSourceLabel.textContent = source.name;
+  startButton.disabled = false;
+}
+
+function escapeText(value) {
+  return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
 
 async function setHotkey(accelerator, persist) {
@@ -110,10 +164,15 @@ function renderHotkey(accelerator) {
 }
 
 async function startRecording() {
+  if (!selectedSourceId) {
+    showView('welcome');
+    selectedSourceLabel.textContent = 'Select a window above first';
+    return;
+  }
   try {
     captureStream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30, max: 60 }, cursor: 'always' },
-      audio: true
+      audio: false
     });
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
       ? 'video/webm;codecs=vp9,opus'
@@ -135,7 +194,7 @@ async function startRecording() {
     timer.textContent = '00:00';
     timerInterval = setInterval(updateTimer, 250);
   } catch (error) {
-    if (error.name !== 'NotAllowedError') alert(`Could not start recording: ${error.message}`);
+    alert(`Could not start recording: ${error.message || error.name}. Refresh the window list and try again.`);
   }
 }
 
@@ -435,6 +494,7 @@ function resetProject() {
   zoomMarkers = [];
   selectedZoomId = null;
   showView('welcome');
+  loadCaptureSources();
 }
 
 function formatPrecise(seconds) {
