@@ -28,6 +28,9 @@
       "src/**/*",
       "package.json"
     ],
+    "extraResources": [
+      { "from": "native/bin/ApplicationLoopback.exe", "to": "native/ApplicationLoopback.exe" }
+    ],
     "directories": {
       "output": "release"
     },
