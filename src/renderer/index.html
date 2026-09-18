@@ -17,7 +17,7 @@
         <div class="intro">
           <p class="eyebrow">SCREEN RECORDING, AUTOMATICALLY POLISHED</p>
           <h1>Record normally.<br><span>Look professionally edited.</span></h1>
-          <p>ClickFilm follows your cursor and turns clicks into smooth, animated zooms—without uploading your recording anywhere.</p>
+          <p>Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.</p>
         </div>
 
         <button id="start-button" class="record-card">
@@ -26,21 +26,26 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
 
+        <div class="hotkey-setting">
+          <div><strong>Recording hotkey</strong><small>Works while ClickFilm is in the background</small></div>
+          <button id="hotkey-button" class="hotkey-button"><kbd>Ctrl</kbd><i>+</i><kbd>Shift</kbd><i>+</i><kbd>R</kbd></button>
+          <span id="hotkey-status" class="hotkey-status">Click, then press your shortcut</span>
+        </div>
+
         <div class="steps">
           <div><b>01</b><strong>Record your screen</strong><span>Use your app naturally.</span></div>
-          <div><b>02</b><strong>Clicks become zooms</strong><span>Adjustable, smooth focus.</span></div>
+          <div><b>02</b><strong>Design your zooms</strong><span>Choose the area, timing, and strength.</span></div>
           <div><b>03</b><strong>Export and share</strong><span>Ready-to-post MP4.</span></div>
         </div>
       </section>
 
       <section id="recording-view" class="recording-view hidden">
         <div class="recording-status"><span class="pulse"></span><strong>Recording</strong><time id="timer">00:00</time></div>
-        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption">Clicks create automatic zooms</div></div>
+        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption">Record naturally — zooms are added later</div></div>
         <div class="recording-actions">
-          <button id="manual-zoom" class="secondary-button">Add zoom <kbd>Ctrl</kbd><i>+</i><kbd>Shift</kbd><i>+</i><kbd>Z</kbd></button>
           <button id="stop-button" class="stop-button"><span></span> Stop recording</button>
         </div>
-        <p id="hook-message" class="hint"></p>
+        <p class="hint">Your recording stays untouched until you customise it in the editor.</p>
       </section>
 
       <section id="editor-view" class="editor-view hidden">
@@ -68,19 +73,28 @@
                 <button class="swatch" data-background="midnight" style="--swatch:#111625"></button>
               </div>
             </div>
-            <div class="setting-group">
-              <label for="zoom-strength">Zoom strength <output id="zoom-output">1.65×</output></label>
-              <input id="zoom-strength" type="range" min="1.2" max="2.2" value="1.65" step="0.05" />
+            <div class="setting-group zoom-editor">
+              <div class="setting-heading"><label>Custom zooms</label><button id="add-zoom" class="mini-button">+ Add zoom</button></div>
+              <p id="zoom-empty" class="setting-help">Move the playhead, add a zoom, then click the preview to choose its focus.</p>
+              <div id="zoom-controls" class="zoom-controls hidden">
+                <label for="zoom-start">Start <output id="zoom-start-output">0:00.0</output></label>
+                <input id="zoom-start" type="range" min="0" max="1" value="0" step="0.1" />
+                <label for="zoom-duration">Duration <output id="zoom-duration-output">1.5s</output></label>
+                <input id="zoom-duration" type="range" min="0.5" max="5" value="1.5" step="0.1" />
+                <label for="zoom-strength">Strength <output id="zoom-output">1.65×</output></label>
+                <input id="zoom-strength" type="range" min="1.1" max="3" value="1.65" step="0.05" />
+                <button id="delete-zoom" class="delete-button">Delete selected zoom</button>
+              </div>
             </div>
             <div class="setting-group stats">
-              <span><strong id="zoom-count">0</strong> auto zooms</span>
+              <span><strong id="zoom-count">0</strong> custom zooms</span>
               <span><strong id="duration-label">0:00</strong> duration</span>
             </div>
           </aside>
 
           <div class="preview-column">
             <div id="preview-stage" class="preview-stage aurora landscape">
-              <div id="video-window" class="video-window"><video id="playback-video" controls></video></div>
+              <div id="video-window" class="video-window"><video id="playback-video" controls></video><div id="focus-target" class="focus-target hidden"><span></span></div></div>
             </div>
             <div class="timeline">
               <div class="timeline-ruler"><span>0:00</span><span id="mid-time">0:00</span><span id="end-time">0:00</span></div>
