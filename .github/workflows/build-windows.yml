@@ -25,6 +25,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore per-app audio helper
+        run: nuget restore native/ApplicationLoopback/ApplicationLoopback.vcxproj -PackagesDirectory native/ApplicationLoopback/packages
+
+      - name: Build per-app audio helper
+        run: |
+          msbuild native/ApplicationLoopback/ApplicationLoopback.vcxproj /p:Configuration=Release /p:Platform=x64
+          New-Item -ItemType Directory -Force native/bin
+          Copy-Item native/ApplicationLoopback/x64/Release/ApplicationLoopback.exe native/bin/ApplicationLoopback.exe
+
       - name: Build installer and portable app
         run: npm run build:win
         env:
