@@ -33,9 +33,12 @@ jobs:
 
       - name: Build per-app audio helper
         run: |
-          msbuild native/ApplicationLoopback/ApplicationLoopback.vcxproj /p:Configuration=Release /p:Platform=x64
           New-Item -ItemType Directory -Force native/bin
-          Copy-Item native/ApplicationLoopback/x64/Release/ApplicationLoopback.exe native/bin/ApplicationLoopback.exe
+          msbuild native/ApplicationLoopback/ApplicationLoopback.vcxproj /p:Configuration=Release /p:Platform=x64 /p:OutDir="$env:GITHUB_WORKSPACE\native\bin\\"
+          if (!(Test-Path native/bin/ApplicationLoopback.exe)) {
+            Get-ChildItem native -Recurse -Filter ApplicationLoopback.exe
+            throw "ApplicationLoopback.exe was not produced in native/bin"
+          }
 
       - name: Build installer and portable app
         run: npm run build:win
