@@ -5,7 +5,6 @@ const views = {
 };
 const startButton = document.querySelector('#start-button');
 const stopButton = document.querySelector('#stop-button');
-const manualZoomButton = document.querySelector('#manual-zoom');
 const liveVideo = document.querySelector('#live-video');
 const playbackVideo = document.querySelector('#playback-video');
 const timer = document.querySelector('#timer');
@@ -16,17 +15,20 @@ const playhead = document.querySelector('#playhead');
 const exportStatus = document.querySelector('#export-status');
 const exportProgress = document.querySelector('#export-progress');
 const canvas = document.querySelector('#render-canvas');
+const focusTarget = document.querySelector('#focus-target');
+const zoomControls = document.querySelector('#zoom-controls');
+const hotkeyButton = document.querySelector('#hotkey-button');
+const hotkeyStatus = document.querySelector('#hotkey-status');
 
 let captureStream;
 let recorder;
 let chunks = [];
 let recordingStartedAt = 0;
 let timerInterval;
-let unsubscribeTracker;
 let rawRecordingUrl;
-let cursorSamples = [];
 let zoomMarkers = [];
-let settings = { format: 'landscape', background: 'aurora', zoom: 1.65 };
+let selectedZoomId = null;
+let settings = { format: 'landscape', background: 'aurora' };
 
 const backgrounds = {
   aurora: ['#4f5ee7', '#b454cf'],
@@ -41,14 +43,76 @@ function showView(name) {
 
 startButton.addEventListener('click', startRecording);
 stopButton.addEventListener('click', stopRecording);
-manualZoomButton.addEventListener('click', () => addManualZoom());
+document.querySelector('#add-zoom').addEventListener('click', addCustomZoom);
+document.querySelector('#delete-zoom').addEventListener('click', deleteSelectedZoom);
 document.querySelector('#new-button').addEventListener('click', resetProject);
 document.querySelector('#export-button').addEventListener('click', exportVideo);
+hotkeyButton.addEventListener('click', beginHotkeyCapture);
+window.clickfilm.onRecordingToggle(() => {
+  if (recorder?.state === 'recording') stopRecording();
+  else if (!views.recording.classList.contains('hidden')) return;
+  else if (!views.editor.classList.contains('hidden')) {
+    hotkeyStatus.textContent = 'Start a new project before recording again.';
+  } else startRecording();
+});
+
+const savedHotkey = localStorage.getItem('recordingHotkey') || 'CommandOrControl+Shift+R';
+setHotkey(savedHotkey, false);
+
+function beginHotkeyCapture() {
+  hotkeyButton.classList.add('listening');
+  hotkeyButton.textContent = 'Press shortcut…';
+  hotkeyStatus.textContent = 'Use Ctrl, Alt, Shift, or the Windows key plus another key.';
+  window.addEventListener('keydown', captureHotkey, { once: true, capture: true });
+}
+
+function captureHotkey(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const accelerator = acceleratorFromEvent(event);
+  if (!accelerator) {
+    hotkeyButton.classList.remove('listening');
+    setHotkey(localStorage.getItem('recordingHotkey') || 'CommandOrControl+Shift+R', false);
+    hotkeyStatus.textContent = 'That shortcut needs a modifier and a letter, number, or function key.';
+    return;
+  }
+  setHotkey(accelerator, true);
+}
+
+async function setHotkey(accelerator, persist) {
+  const result = await window.clickfilm.setRecordingHotkey(accelerator);
+  hotkeyButton.classList.remove('listening');
+  renderHotkey(result.accelerator);
+  if (result.ok) {
+    if (persist) localStorage.setItem('recordingHotkey', result.accelerator);
+    hotkeyStatus.textContent = 'Shortcut ready.';
+  } else {
+    hotkeyStatus.textContent = 'Windows is already using that shortcut. The previous shortcut is still active.';
+  }
+}
+
+function acceleratorFromEvent(event) {
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return null;
+  const modifiers = [];
+  if (event.ctrlKey || event.metaKey) modifiers.push('CommandOrControl');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (!modifiers.length) return null;
+  let key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+  if (key === ' ') key = 'Space';
+  if (!/^([A-Z0-9]|F(?:[1-9]|1[0-2])|Space|Enter|Tab|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Arrow(?:Up|Down|Left|Right))$/.test(key)) return null;
+  return [...modifiers, key].join('+');
+}
+
+function renderHotkey(accelerator) {
+  const labels = accelerator.replace('CommandOrControl', 'Ctrl').split('+');
+  hotkeyButton.innerHTML = labels.map(label => `<kbd>${label.replace('Arrow', '')}</kbd>`).join('<i>+</i>');
+}
 
 async function startRecording() {
   try {
     captureStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: 30, max: 60 }, cursor: 'never' },
+      video: { frameRate: { ideal: 30, max: 60 }, cursor: 'always' },
       audio: true
     });
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
@@ -56,8 +120,8 @@ async function startRecording() {
       : 'video/webm';
     recorder = new MediaRecorder(captureStream, { mimeType, videoBitsPerSecond: 10_000_000 });
     chunks = [];
-    cursorSamples = [];
     zoomMarkers = [];
+    selectedZoomId = null;
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     recorder.onstop = finishRecording;
     captureStream.getVideoTracks()[0].addEventListener('ended', () => {
@@ -65,17 +129,7 @@ async function startRecording() {
     });
 
     liveVideo.srcObject = captureStream;
-    const tracker = await window.clickfilm.startTracker();
-    recordingStartedAt = tracker.startedAt;
-    document.querySelector('#hook-message').textContent = tracker.hookAvailable
-      ? 'Automatic click tracking is active.'
-      : 'Windows blocked automatic clicks. Use Ctrl+Shift+Z to add zooms.';
-    unsubscribeTracker = window.clickfilm.onTrackerEvent(event => {
-      const sample = { t: Math.max(0, event.at - recordingStartedAt), x: event.x, y: event.y };
-      cursorSamples.push(sample);
-      if (event.kind === 'click') zoomMarkers.push(sample);
-    });
-
+    recordingStartedAt = Date.now();
     recorder.start(500);
     showView('recording');
     timer.textContent = '00:00';
@@ -85,11 +139,6 @@ async function startRecording() {
   }
 }
 
-function addManualZoom() {
-  const last = cursorSamples.at(-1) || { x: .5, y: .5 };
-  zoomMarkers.push({ ...last, t: Date.now() - recordingStartedAt });
-}
-
 function updateTimer() {
   timer.textContent = formatTime((Date.now() - recordingStartedAt) / 1000);
 }
@@ -97,8 +146,6 @@ function updateTimer() {
 async function stopRecording() {
   if (!recorder || recorder.state !== 'recording') return;
   clearInterval(timerInterval);
-  await window.clickfilm.stopTracker();
-  unsubscribeTracker?.();
   recorder.stop();
   captureStream.getTracks().forEach(track => track.stop());
 }
@@ -114,6 +161,7 @@ function finishRecording() {
     document.querySelector('#mid-time').textContent = formatTime(playbackVideo.duration / 2);
     document.querySelector('#end-time').textContent = formatTime(playbackVideo.duration);
     renderTimeline();
+    syncZoomEditor();
   };
   playbackVideo.ontimeupdate = updatePreviewMotion;
   showView('editor');
@@ -129,13 +177,14 @@ function updatePreviewMotion() {
 }
 
 function zoomAt(ms) {
-  const marker = [...zoomMarkers].reverse().find(item => item.t <= ms && ms - item.t < 1900);
+  const marker = [...zoomMarkers].reverse().find(item => item.startMs <= ms && ms <= item.startMs + item.durationMs);
   if (!marker) return { x: .5, y: .5, scale: 1 };
-  const age = ms - marker.t;
-  const rampIn = ease(Math.min(1, age / 260));
-  const rampOut = age > 1450 ? 1 - ease(Math.min(1, (age - 1450) / 450)) : 1;
+  const age = ms - marker.startMs;
+  const transition = Math.min(300, marker.durationMs * .25);
+  const rampIn = ease(Math.min(1, age / transition));
+  const rampOut = age > marker.durationMs - transition ? 1 - ease(Math.min(1, (age - marker.durationMs + transition) / transition)) : 1;
   const amount = Math.min(rampIn, rampOut);
-  return { x: marker.x, y: marker.y, scale: 1 + (settings.zoom - 1) * amount };
+  return { x: marker.x, y: marker.y, scale: 1 + (marker.scale - 1) * amount };
 }
 
 function ease(value) { return 1 - Math.pow(1 - value, 3); }
@@ -143,13 +192,100 @@ function ease(value) { return 1 - Math.pow(1 - value, 3); }
 function renderTimeline() {
   markerTrack.querySelectorAll('.zoom-marker').forEach(node => node.remove());
   zoomMarkers.forEach(marker => {
-    const node = document.createElement('i');
-    node.className = 'zoom-marker';
-    node.style.left = `${Math.min(100, marker.t / (playbackVideo.duration * 10))}%`;
-    node.title = `Zoom at ${formatTime(marker.t / 1000)}`;
+    const node = document.createElement('button');
+    node.className = `zoom-marker${marker.id === selectedZoomId ? ' selected' : ''}`;
+    node.style.left = `${marker.startMs / (playbackVideo.duration * 10)}%`;
+    node.style.width = `${Math.max(1.5, marker.durationMs / (playbackVideo.duration * 10))}%`;
+    node.title = `Custom zoom at ${formatTime(marker.startMs / 1000)}`;
+    node.addEventListener('click', () => selectZoom(marker.id));
     markerTrack.appendChild(node);
   });
 }
+
+function addCustomZoom() {
+  if (!playbackVideo.duration) return;
+  const durationMs = Math.min(1500, Math.max(500, (playbackVideo.duration - playbackVideo.currentTime) * 1000));
+  const zoom = {
+    id: crypto.randomUUID(),
+    startMs: Math.min(playbackVideo.currentTime * 1000, Math.max(0, playbackVideo.duration * 1000 - durationMs)),
+    durationMs,
+    scale: 1.65,
+    x: .5,
+    y: .5
+  };
+  zoomMarkers.push(zoom);
+  zoomMarkers.sort((a, b) => a.startMs - b.startMs);
+  selectZoom(zoom.id);
+}
+
+function selectedZoom() { return zoomMarkers.find(item => item.id === selectedZoomId); }
+
+function selectZoom(id) {
+  selectedZoomId = id;
+  const zoom = selectedZoom();
+  if (zoom) playbackVideo.currentTime = zoom.startMs / 1000 + Math.min(.35, zoom.durationMs / 2000);
+  renderTimeline();
+  syncZoomEditor();
+  updatePreviewMotion();
+}
+
+function deleteSelectedZoom() {
+  zoomMarkers = zoomMarkers.filter(item => item.id !== selectedZoomId);
+  selectedZoomId = zoomMarkers[0]?.id || null;
+  renderTimeline();
+  syncZoomEditor();
+  updatePreviewMotion();
+}
+
+function syncZoomEditor() {
+  const zoom = selectedZoom();
+  document.querySelector('#zoom-count').textContent = zoomMarkers.length;
+  document.querySelector('#zoom-empty').classList.toggle('hidden', Boolean(zoom));
+  zoomControls.classList.toggle('hidden', !zoom);
+  focusTarget.classList.toggle('hidden', !zoom);
+  if (!zoom) return;
+  const maxMs = playbackVideo.duration * 1000;
+  const start = document.querySelector('#zoom-start');
+  start.max = Math.max(0, maxMs - 500);
+  start.value = zoom.startMs;
+  document.querySelector('#zoom-start-output').textContent = formatPrecise(zoom.startMs / 1000);
+  document.querySelector('#zoom-duration').value = zoom.durationMs / 1000;
+  document.querySelector('#zoom-duration-output').textContent = `${(zoom.durationMs / 1000).toFixed(1)}s`;
+  document.querySelector('#zoom-strength').value = zoom.scale;
+  document.querySelector('#zoom-output').textContent = `${zoom.scale.toFixed(2)}×`;
+  focusTarget.style.left = `${zoom.x * 100}%`;
+  focusTarget.style.top = `${zoom.y * 100}%`;
+}
+
+document.querySelector('#zoom-start').addEventListener('input', event => {
+  const zoom = selectedZoom();
+  if (!zoom) return;
+  zoom.startMs = Number(event.target.value);
+  document.querySelector('#zoom-start-output').textContent = formatPrecise(zoom.startMs / 1000);
+  playbackVideo.currentTime = zoom.startMs / 1000;
+  zoomMarkers.sort((a, b) => a.startMs - b.startMs);
+  renderTimeline();
+});
+
+document.querySelector('#zoom-duration').addEventListener('input', event => {
+  const zoom = selectedZoom();
+  if (!zoom) return;
+  zoom.durationMs = Number(event.target.value) * 1000;
+  document.querySelector('#zoom-duration-output').textContent = `${Number(event.target.value).toFixed(1)}s`;
+  renderTimeline();
+  updatePreviewMotion();
+});
+
+videoWindow.addEventListener('click', event => {
+  if (event.target === playbackVideo && !selectedZoom()) return;
+  const zoom = selectedZoom();
+  if (!zoom) return;
+  const bounds = videoWindow.getBoundingClientRect();
+  zoom.x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+  zoom.y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+  syncZoomEditor();
+  updatePreviewMotion();
+});
 
 document.querySelector('#format-control').addEventListener('click', event => {
   const button = event.target.closest('button[data-format]');
@@ -170,8 +306,10 @@ document.querySelector('#background-control').addEventListener('click', event =>
 });
 
 document.querySelector('#zoom-strength').addEventListener('input', event => {
-  settings.zoom = Number(event.target.value);
-  document.querySelector('#zoom-output').textContent = `${settings.zoom.toFixed(2)}×`;
+  const zoom = selectedZoom();
+  if (!zoom) return;
+  zoom.scale = Number(event.target.value);
+  document.querySelector('#zoom-output').textContent = `${zoom.scale.toFixed(2)}×`;
   updatePreviewMotion();
 });
 
@@ -274,46 +412,7 @@ function drawFrame(context) {
   roundedRect(context, dx, dy, target.width, target.height, 18);
   context.clip();
   context.drawImage(playbackVideo, sourceX, sourceY, sourceWidth, sourceHeight, dx, dy, target.width, target.height);
-  drawCursor(context, dx, dy, target.width, target.height, motion);
   context.restore();
-}
-
-function drawCursor(context, dx, dy, width, height, motion) {
-  const time = playbackVideo.currentTime * 1000;
-  const index = lowerBound(cursorSamples, time);
-  const current = cursorSamples[Math.min(index, cursorSamples.length - 1)];
-  if (!current) return;
-  const cursorX = dx + ((current.x - (motion.x - .5 / motion.scale)) * motion.scale) * width;
-  const cursorY = dy + ((current.y - (motion.y - .5 / motion.scale)) * motion.scale) * height;
-  context.save();
-  context.translate(cursorX, cursorY);
-  context.scale(Math.max(1, canvas.width / 1200), Math.max(1, canvas.width / 1200));
-  context.beginPath();
-  context.moveTo(0, 0);
-  context.lineTo(0, 25);
-  context.lineTo(7, 19);
-  context.lineTo(12, 31);
-  context.lineTo(18, 28);
-  context.lineTo(13, 17);
-  context.lineTo(23, 16);
-  context.closePath();
-  context.fillStyle = '#fff';
-  context.strokeStyle = '#111';
-  context.lineWidth = 2;
-  context.fill();
-  context.stroke();
-  context.restore();
-}
-
-function lowerBound(samples, time) {
-  let low = 0;
-  let high = samples.length;
-  while (low < high) {
-    const mid = (low + high) >> 1;
-    if (samples[mid].t < time) low = mid + 1;
-    else high = mid;
-  }
-  return low;
 }
 
 function fitRect(sourceWidth, sourceHeight, maxWidth, maxHeight) {
@@ -333,9 +432,13 @@ function resetProject() {
   playbackVideo.load();
   if (rawRecordingUrl) URL.revokeObjectURL(rawRecordingUrl);
   rawRecordingUrl = null;
-  cursorSamples = [];
   zoomMarkers = [];
+  selectedZoomId = null;
   showView('welcome');
+}
+
+function formatPrecise(seconds) {
+  return `${formatTime(seconds)}.${Math.floor((seconds % 1) * 10)}`;
 }
 
 function formatTime(seconds) {
