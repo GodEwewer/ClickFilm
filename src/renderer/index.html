@@ -20,9 +20,12 @@
           <p>Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.</p>
         </div>
 
-        <button id="start-button" class="record-card">
+        <div class="source-heading"><div><strong>Choose a window to record</strong><small>Only this window will appear in the video</small></div><button id="refresh-sources" class="ghost-button">Refresh</button></div>
+        <div id="source-list" class="source-list"><p class="source-loading">Finding open windows…</p></div>
+
+        <button id="start-button" class="record-card" disabled>
           <span class="record-icon"><i></i></span>
-          <span><strong>Start recording</strong><small>Choose a screen or window</small></span>
+          <span><strong>Start recording</strong><small id="selected-source-label">Select a window above first</small></span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
 
