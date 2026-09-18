@@ -29,6 +29,8 @@ let chunks = [];
 let recordingStartedAt = 0;
 let timerInterval;
 let rawRecordingUrl;
+let rawRecordingBlob;
+let localRecordingPromise;
 let zoomMarkers = [];
 let selectedZoomId = null;
 let selectedSourceId = null;
@@ -250,6 +252,9 @@ async function stopRecording() {
 
 function finishRecording() {
   const blob = new Blob(chunks, { type: recorder.mimeType });
+  rawRecordingBlob = blob;
+  localRecordingPromise = blob.arrayBuffer()
+    .then(buffer => window.clickfilm.storeRecording(new Uint8Array(buffer)));
   if (rawRecordingUrl) URL.revokeObjectURL(rawRecordingUrl);
   rawRecordingUrl = URL.createObjectURL(blob);
   playbackVideo.src = rawRecordingUrl;
@@ -413,14 +418,24 @@ document.querySelector('#zoom-strength').addEventListener('input', event => {
 });
 
 async function exportVideo() {
-  if (!playbackVideo.duration) return;
+  if (!playbackVideo.duration || !rawRecordingBlob) return;
   document.querySelector('#export-button').disabled = true;
   exportStatus.classList.remove('hidden');
   exportProgress.textContent = '0%';
   try {
-    const webm = await renderStyledVideo();
-    exportStatus.querySelector('strong').textContent = 'Converting to MP4…';
-    const result = await window.clickfilm.exportMp4(new Uint8Array(await webm.arrayBuffer()));
+    exportStatus.querySelector('strong').textContent = 'Rendering locally with FFmpeg…';
+    exportStatus.querySelector('small').textContent = 'This runs as fast as your computer allows—no real-time playback required.';
+    exportProgress.textContent = 'FAST';
+    await localRecordingPromise;
+    const result = await window.clickfilm.exportMp4({
+      spec: {
+        format: settings.format,
+        background: settings.background,
+        zooms: zoomMarkers,
+        sourceWidth: playbackVideo.videoWidth,
+        sourceHeight: playbackVideo.videoHeight
+      }
+    });
     if (result.ok) {
       exportStatus.querySelector('strong').textContent = 'Export complete';
       exportStatus.querySelector('small').textContent = result.path;
@@ -437,7 +452,7 @@ async function exportVideo() {
   } finally {
     document.querySelector('#export-button').disabled = false;
     exportStatus.querySelector('strong').textContent = 'Rendering your video…';
-    exportStatus.querySelector('small').textContent = 'ClickFilm renders locally in real time. Keep the app open.';
+    exportStatus.querySelector('small').textContent = 'ClickFilm renders locally with FFmpeg. Keep the app open.';
   }
 }
 
@@ -539,6 +554,9 @@ function resetProject() {
   playbackVideo.load();
   if (rawRecordingUrl) URL.revokeObjectURL(rawRecordingUrl);
   rawRecordingUrl = null;
+  rawRecordingBlob = null;
+  localRecordingPromise = null;
+  window.clickfilm.clearRecording().catch(() => {});
   zoomMarkers = [];
   selectedZoomId = null;
   showView('welcome');
