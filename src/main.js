@@ -9,6 +9,7 @@ let recordingAccelerator = 'CommandOrControl+Shift+R';
 let selectedCaptureSourceId = null;
 let audioCaptures = [];
 let audioSessionDir = null;
+let currentRecordingFile = null;
 
 function registerRecordingHotkey(accelerator = recordingAccelerator) {
   globalShortcut.unregister(recordingAccelerator);
@@ -48,6 +49,60 @@ function resolveAudioHelperPath() {
   return app.isPackaged
     ? path.join(process.resourcesPath, 'native', 'ApplicationLoopback.exe')
     : path.join(__dirname, '..', 'native', 'bin', 'ApplicationLoopback.exe');
+}
+
+function ffmpegNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function buildZoomExpressions(zooms) {
+  let zoom = '1';
+  let x = '(iw-iw/zoom)/2';
+  let y = '(ih-ih/zoom)/2';
+  [...zooms].reverse().forEach(item => {
+    const start = ffmpegNumber(item.startMs) / 1000;
+    const duration = Math.max(.1, ffmpegNumber(item.durationMs, 1500) / 1000);
+    const end = start + duration;
+    const transition = Math.min(.3, duration * .25);
+    const scale = Math.max(1, ffmpegNumber(item.scale, 1.65));
+    const focusX = Math.max(0, Math.min(1, ffmpegNumber(item.x, .5)));
+    const focusY = Math.max(0, Math.min(1, ffmpegNumber(item.y, .5)));
+    const animated = `if(lt(in_time-${start},${transition}),1+(${scale}-1)*(in_time-${start})/${transition},if(gt(in_time,${end - transition}),1+(${scale}-1)*(${end}-in_time)/${transition},${scale}))`;
+    zoom = `if(between(in_time,${start},${end}),${animated},${zoom})`;
+    x = `if(between(in_time,${start},${end}),(iw-iw/zoom)*${focusX},${x})`;
+    y = `if(between(in_time,${start},${end}),(ih-ih/zoom)*${focusY},${y})`;
+  });
+  return { zoom, x, y };
+}
+
+function buildVideoFilter(spec) {
+  const sourceWidth = Math.max(2, Math.round(ffmpegNumber(spec.sourceWidth, 1920) / 2) * 2);
+  const sourceHeight = Math.max(2, Math.round(ffmpegNumber(spec.sourceHeight, 1080) / 2) * 2);
+  const zooms = Array.isArray(spec.zooms) ? spec.zooms : [];
+  const expressions = buildZoomExpressions(zooms);
+  const filters = [];
+  let input = '[0:v]';
+  if (zooms.length) {
+    filters.push(`${input}zoompan=z='${expressions.zoom}':x='${expressions.x}':y='${expressions.y}':d=1:fps=30:s=${sourceWidth}x${sourceHeight}[zoomed]`);
+    input = '[zoomed]';
+  }
+  if (spec.background === 'none') {
+    filters.push(`${input}setsar=1[videoout]`);
+    return filters;
+  }
+  const sizes = { landscape: [1920, 1080], portrait: [1080, 1920], square: [1080, 1080] };
+  const [width, height] = sizes[spec.format] || sizes.landscape;
+  const margin = spec.format === 'portrait' ? Math.round(width * .065) : Math.round(Math.min(width, height) * .075);
+  const backgrounds = {
+    aurora: ['0x4f5ee7', '0xb454cf'], ocean: ['0x076585', '0x45b5aa'],
+    sunset: ['0xf857a6', '0xff5858'], midnight: ['0x111625', '0x111625']
+  };
+  const [start, end] = backgrounds[spec.background] || backgrounds.aurora;
+  filters.push(`gradients=s=${width}x${height}:c0=${start}:c1=${end}:x0=0:y0=0:x1=${width}:y1=${height}[bg]`);
+  filters.push(`${input}scale=${width - margin * 2}:${height - margin * 2}:force_original_aspect_ratio=decrease[foreground]`);
+  filters.push(`[bg][foreground]overlay=(W-w)/2:(H-h)/2:shortest=1,setsar=1[videoout]`);
+  return filters;
 }
 
 async function stopAudioCaptures() {
@@ -142,7 +197,20 @@ ipcMain.handle('audio:start', async (_event, pids) => {
 
 ipcMain.handle('audio:stop', async () => ({ ok: true, files: await stopAudioCaptures() }));
 
-ipcMain.handle('export:mp4', async (_event, bytes) => {
+ipcMain.handle('recording:store', async (_event, bytes) => {
+  if (currentRecordingFile) await fs.promises.unlink(currentRecordingFile).catch(() => {});
+  currentRecordingFile = path.join(os.tmpdir(), `clickfilm-source-${Date.now()}.webm`);
+  await fs.promises.writeFile(currentRecordingFile, Buffer.from(bytes));
+  return { ok: true };
+});
+
+ipcMain.handle('recording:clear', async () => {
+  if (currentRecordingFile) await fs.promises.unlink(currentRecordingFile).catch(() => {});
+  currentRecordingFile = null;
+  return true;
+});
+
+ipcMain.handle('export:mp4', async (_event, payload) => {
   const choice = await dialog.showSaveDialog(mainWindow, {
     title: 'Save ClickFilm video',
     defaultPath: `ClickFilm-${new Date().toISOString().slice(0, 10)}.mp4`,
@@ -150,8 +218,11 @@ ipcMain.handle('export:mp4', async (_event, bytes) => {
   });
   if (choice.canceled || !choice.filePath) return { canceled: true };
 
-  const tempFile = path.join(os.tmpdir(), `clickfilm-${Date.now()}.webm`);
-  await fs.promises.writeFile(tempFile, Buffer.from(bytes));
+  const tempFile = currentRecordingFile || path.join(os.tmpdir(), `clickfilm-${Date.now()}.webm`);
+  const bytes = payload?.bytes;
+  const spec = payload?.spec || { background: 'none', format: 'landscape', zooms: [] };
+  if (!currentRecordingFile && bytes) await fs.promises.writeFile(tempFile, Buffer.from(bytes));
+  if (!fs.existsSync(tempFile)) return { canceled: false, ok: false, error: 'The local source recording is missing.' };
   const ffmpeg = resolveFfmpegPath();
 
   const audioFiles = audioSessionDir
@@ -160,16 +231,20 @@ ipcMain.handle('export:mp4', async (_event, bytes) => {
   return new Promise(resolve => {
     const args = ['-y', '-i', tempFile];
     audioFiles.forEach(file => args.push('-i', file));
-    if (audioFiles.length === 1) args.push('-map', '0:v:0', '-map', '1:a:0');
-    else if (audioFiles.length > 1) {
+    const filters = buildVideoFilter(spec);
+    if (audioFiles.length > 1) {
       const inputs = audioFiles.map((_file, index) => `[${index + 1}:a]`).join('');
-      args.push('-filter_complex', `${inputs}amix=inputs=${audioFiles.length}:duration=longest:normalize=0[aout]`, '-map', '0:v:0', '-map', '[aout]');
-    } else args.push('-map', '0:v:0');
-    args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
+      filters.push(`${inputs}amix=inputs=${audioFiles.length}:duration=longest:normalize=0[aout]`);
+    }
+    args.push('-filter_complex', filters.join(';'), '-map', '[videoout]');
+    if (audioFiles.length === 1) args.push('-map', '1:a:0');
+    else if (audioFiles.length > 1) args.push('-map', '[aout]');
+    args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
     if (audioFiles.length) args.push('-c:a', 'aac', '-b:a', '192k');
     args.push(choice.filePath);
     execFile(ffmpeg, args, async error => {
       await fs.promises.unlink(tempFile).catch(() => {});
+      if (tempFile === currentRecordingFile) currentRecordingFile = null;
       if (audioSessionDir) await fs.promises.rm(audioSessionDir, { recursive: true, force: true }).catch(() => {});
       audioSessionDir = null;
       if (error) resolve({ canceled: false, ok: false, error: error.message });
