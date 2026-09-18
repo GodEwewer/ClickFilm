@@ -13,6 +13,8 @@
 body { margin: 0; min-width: 900px; min-height: 100vh; overflow-x: hidden; background: radial-gradient(circle at 50% -20%, #1e2038 0, transparent 42rem), var(--bg); color: var(--text); }
 button, input { font: inherit; }
 button { color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+button, input, video, .source-list { -webkit-app-region: no-drag; }
 .hidden { display: none !important; }
 .app-header { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid rgba(255,255,255,.07); -webkit-app-region: drag; }
 .brand, .privacy-pill { display: flex; align-items: center; }
@@ -30,6 +32,17 @@ h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.04; letter
 h1 span { color: #8c93a6; }
 .intro > p:last-child { max-width: 600px; margin: 21px auto 42px; color: var(--muted); line-height: 1.7; }
 .record-card { width: min(660px, 100%); min-height: 94px; margin: 0 auto; padding: 18px 22px; display: flex; align-items: center; gap: 17px; border: 1px solid #373c55; border-radius: 17px; background: linear-gradient(180deg,#171b29,#111520); box-shadow: 0 30px 80px rgba(0,0,0,.32); text-align: left; transition: transform .2s, border-color .2s; }
+.source-heading { width: min(660px, 100%); margin: 0 auto 10px; display: flex; align-items: center; justify-content: space-between; text-align: left; }
+.source-heading strong, .source-heading small { display: block; }
+.source-heading strong { font-size: .78rem; }
+.source-heading small { margin-top: 3px; color: var(--muted); font-size: .67rem; }
+.source-list { width: min(660px, 100%); margin: 0 auto 14px; display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; max-height: 190px; overflow-y: auto; }
+.source-card { min-width: 0; padding: 7px; border: 1px solid #30364a; border-radius: 10px; background: #111520; text-align: left; }
+.source-card:hover { border-color: #625ba7; }
+.source-card.selected { border-color: #968dff; box-shadow: 0 0 0 2px rgba(150,141,255,.18); }
+.source-card img { width: 100%; aspect-ratio: 16/9; display: block; object-fit: cover; border-radius: 6px; background: #06070a; }
+.source-card span { display: block; margin-top: 6px; overflow: hidden; color: #c8ccda; font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }
+.source-loading { grid-column: 1/-1; margin: 0; padding: 18px; border: 1px dashed #343a4d; border-radius: 10px; color: var(--muted); font-size: .72rem; }
 .record-card:hover { transform: translateY(-2px); border-color: #6b64c7; }
 .record-card > span:nth-child(2) { flex: 1; }
 .record-card strong, .record-card small { display: block; }
