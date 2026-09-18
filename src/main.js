@@ -6,6 +6,7 @@ const path = require('node:path');
 
 let mainWindow;
 let recordingAccelerator = 'CommandOrControl+Shift+R';
+let selectedCaptureSourceId = null;
 
 function registerRecordingHotkey(accelerator = recordingAccelerator) {
   globalShortcut.unregister(recordingAccelerator);
@@ -47,11 +48,11 @@ app.whenReady().then(() => {
   });
 
   session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
-    const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 } });
-    const primary = screen.getPrimaryDisplay();
-    const preferred = sources.find(source => String(source.display_id) === String(primary.id)) || sources[0];
-    callback({ video: preferred, audio: 'loopback' });
-  }, { useSystemPicker: true });
+    const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 } });
+    const selected = sources.find(source => source.id === selectedCaptureSourceId);
+    if (!selected) return callback({});
+    callback({ video: selected });
+  });
 
   createWindow();
   registerRecordingHotkey();
@@ -67,6 +68,27 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
 ipcMain.handle('hotkey:set', (_event, accelerator) => registerRecordingHotkey(accelerator));
+
+ipcMain.handle('capture:list-sources', async () => {
+  const sources = await desktopCapturer.getSources({
+    types: ['window'],
+    thumbnailSize: { width: 320, height: 180 },
+    fetchWindowIcons: true
+  });
+  return sources
+    .filter(source => source.name && source.name !== 'ClickFilm')
+    .map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL(),
+      icon: source.appIcon?.toDataURL() || null
+    }));
+});
+
+ipcMain.handle('capture:select-source', (_event, sourceId) => {
+  selectedCaptureSourceId = String(sourceId || '');
+  return Boolean(selectedCaptureSourceId);
+});
 
 ipcMain.handle('export:mp4', async (_event, bytes) => {
   const choice = await dialog.showSaveDialog(mainWindow, {
