@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win nsis portable",
+    "build:win": "electron-builder --win nsis portable --publish never",
     "dist": "electron-builder"
   },
   "dependencies": {
@@ -37,14 +37,17 @@
       "target": [
         "nsis",
         "portable"
-      ],
-      "artifactName": "ClickFilm-${version}-${arch}.${ext}"
+      ]
     },
     "nsis": {
+      "artifactName": "ClickFilm-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "ClickFilm-Portable-${version}-${arch}.${ext}"
     }
   }
 }
