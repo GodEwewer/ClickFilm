@@ -21,6 +21,7 @@ const hotkeyButton = document.querySelector('#hotkey-button');
 const hotkeyStatus = document.querySelector('#hotkey-status');
 const sourceList = document.querySelector('#source-list');
 const selectedSourceLabel = document.querySelector('#selected-source-label');
+const audioList = document.querySelector('#audio-list');
 
 let captureStream;
 let recorder;
@@ -53,6 +54,7 @@ document.querySelector('#new-button').addEventListener('click', resetProject);
 document.querySelector('#export-button').addEventListener('click', exportVideo);
 hotkeyButton.addEventListener('click', beginHotkeyCapture);
 document.querySelector('#refresh-sources').addEventListener('click', loadCaptureSources);
+document.querySelector('#refresh-audio').addEventListener('click', loadAudioApps);
 window.clickfilm.onRecordingToggle(() => {
   if (recorder?.state === 'recording') stopRecording();
   else if (!views.recording.classList.contains('hidden')) return;
@@ -64,6 +66,7 @@ window.clickfilm.onRecordingToggle(() => {
 const savedHotkey = localStorage.getItem('recordingHotkey') || 'CommandOrControl+Shift+R';
 setHotkey(savedHotkey, false);
 loadCaptureSources();
+loadAudioApps();
 
 function beginHotkeyCapture() {
   capturingHotkey = true;
@@ -133,6 +136,38 @@ function escapeText(value) {
   return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 }
 
+async function loadAudioApps() {
+  const checked = new Set(selectedAudioPids());
+  audioList.innerHTML = '<p class="source-loading">Finding apps…</p>';
+  try {
+    const apps = await window.clickfilm.listAudioApps();
+    audioList.replaceChildren();
+    if (!apps.length) {
+      audioList.innerHTML = '<p class="source-loading">No apps with open windows found. Open an app, play audio, then press Refresh.</p>';
+      return;
+    }
+    apps.forEach(app => {
+      const label = document.createElement('label');
+      label.className = 'audio-app';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = app.pid;
+      input.checked = checked.has(app.pid);
+      const name = document.createElement('span');
+      name.textContent = app.title || app.name;
+      name.title = `${app.name} — PID ${app.pid}`;
+      label.append(input, name);
+      audioList.appendChild(label);
+    });
+  } catch (error) {
+    audioList.innerHTML = `<p class="source-loading">Could not list audio apps: ${escapeText(error.message)}</p>`;
+  }
+}
+
+function selectedAudioPids() {
+  return [...audioList.querySelectorAll('input:checked')].map(input => Number(input.value)).filter(Boolean);
+}
+
 async function setHotkey(accelerator, persist) {
   const result = await window.clickfilm.setRecordingHotkey(accelerator);
   hotkeyButton.classList.remove('listening');
@@ -170,6 +205,8 @@ async function startRecording() {
     return;
   }
   try {
+    const audioResult = await window.clickfilm.startAudioCapture(selectedAudioPids());
+    if (!audioResult.ok) throw new Error(audioResult.error);
     captureStream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30, max: 60 }, cursor: 'always' },
       audio: false
@@ -194,6 +231,7 @@ async function startRecording() {
     timer.textContent = '00:00';
     timerInterval = setInterval(updateTimer, 250);
   } catch (error) {
+    await window.clickfilm.stopAudioCapture().catch(() => {});
     alert(`Could not start recording: ${error.message || error.name}. Refresh the window list and try again.`);
   }
 }
@@ -207,6 +245,7 @@ async function stopRecording() {
   clearInterval(timerInterval);
   recorder.stop();
   captureStream.getTracks().forEach(track => track.stop());
+  await window.clickfilm.stopAudioCapture();
 }
 
 function finishRecording() {
@@ -361,6 +400,7 @@ document.querySelector('#background-control').addEventListener('click', event =>
   settings.background = button.dataset.background;
   event.currentTarget.querySelectorAll('button').forEach(item => item.classList.toggle('active', item === button));
   previewStage.classList.remove(...Object.keys(backgrounds));
+  previewStage.classList.remove('none');
   previewStage.classList.add(settings.background);
 });
 
@@ -407,7 +447,9 @@ async function renderStyledVideo() {
     portrait: [1080, 1920],
     square: [1080, 1080]
   };
-  [canvas.width, canvas.height] = sizes[settings.format];
+  [canvas.width, canvas.height] = settings.background === 'none'
+    ? [playbackVideo.videoWidth, playbackVideo.videoHeight]
+    : sizes[settings.format];
   const context = canvas.getContext('2d');
   const outputStream = canvas.captureStream(30);
   const sourceCapture = playbackVideo.captureStream?.();
@@ -442,14 +484,16 @@ async function renderStyledVideo() {
 function drawFrame(context) {
   const width = canvas.width;
   const height = canvas.height;
-  const [start, end] = backgrounds[settings.background];
-  const gradient = context.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, start);
-  gradient.addColorStop(1, end);
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, width, height);
+  if (settings.background !== 'none') {
+    const [start, end] = backgrounds[settings.background];
+    const gradient = context.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, start);
+    gradient.addColorStop(1, end);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, width, height);
+  }
 
-  const margin = settings.format === 'portrait' ? width * .065 : Math.min(width, height) * .075;
+  const margin = settings.background === 'none' ? 0 : settings.format === 'portrait' ? width * .065 : Math.min(width, height) * .075;
   const target = fitRect(playbackVideo.videoWidth, playbackVideo.videoHeight, width - margin * 2, height - margin * 2);
   const dx = (width - target.width) / 2;
   const dy = (height - target.height) / 2;
@@ -459,17 +503,21 @@ function drawFrame(context) {
   const sourceX = Math.max(0, Math.min(playbackVideo.videoWidth - sourceWidth, motion.x * playbackVideo.videoWidth - sourceWidth / 2));
   const sourceY = Math.max(0, Math.min(playbackVideo.videoHeight - sourceHeight, motion.y * playbackVideo.videoHeight - sourceHeight / 2));
 
+  if (settings.background !== 'none') {
+    context.save();
+    context.shadowColor = 'rgba(0,0,0,.35)';
+    context.shadowBlur = 46;
+    context.shadowOffsetY = 22;
+    roundedRect(context, dx, dy, target.width, target.height, 18);
+    context.fillStyle = '#050608';
+    context.fill();
+    context.restore();
+  }
   context.save();
-  context.shadowColor = 'rgba(0,0,0,.35)';
-  context.shadowBlur = 46;
-  context.shadowOffsetY = 22;
-  roundedRect(context, dx, dy, target.width, target.height, 18);
-  context.fillStyle = '#050608';
-  context.fill();
-  context.restore();
-  context.save();
-  roundedRect(context, dx, dy, target.width, target.height, 18);
-  context.clip();
+  if (settings.background !== 'none') {
+    roundedRect(context, dx, dy, target.width, target.height, 18);
+    context.clip();
+  }
   context.drawImage(playbackVideo, sourceX, sourceY, sourceWidth, sourceHeight, dx, dy, target.width, target.height);
   context.restore();
 }
@@ -495,6 +543,7 @@ function resetProject() {
   selectedZoomId = null;
   showView('welcome');
   loadCaptureSources();
+  loadAudioApps();
 }
 
 function formatPrecise(seconds) {
