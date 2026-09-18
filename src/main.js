@@ -1,13 +1,22 @@
-const { app, BrowserWindow, ipcMain, screen, globalShortcut, session, desktopCapturer, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, session, desktopCapturer, dialog, globalShortcut } = require('electron');
 const { execFile } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
 let mainWindow;
-let cursorTimer;
-let trackerStartedAt = 0;
-let mouseHook;
+let recordingAccelerator = 'CommandOrControl+Shift+R';
+
+function registerRecordingHotkey(accelerator = recordingAccelerator) {
+  globalShortcut.unregister(recordingAccelerator);
+  const registered = globalShortcut.register(accelerator, () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send('recording:toggle');
+  });
+  if (registered) recordingAccelerator = accelerator;
+  else globalShortcut.register(recordingAccelerator, () => mainWindow?.webContents.send('recording:toggle'));
+  return { ok: registered, accelerator: recordingAccelerator };
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -32,50 +41,6 @@ function resolveFfmpegPath() {
   return binary.includes('app.asar') ? binary.replace('app.asar', 'app.asar.unpacked') : binary;
 }
 
-function cursorPayload(kind = 'move') {
-  const point = screen.getCursorScreenPoint();
-  const display = screen.getDisplayNearestPoint(point);
-  const bounds = display.bounds;
-  return {
-    kind,
-    at: Date.now(),
-    x: Math.max(0, Math.min(1, (point.x - bounds.x) / bounds.width)),
-    y: Math.max(0, Math.min(1, (point.y - bounds.y) / bounds.height)),
-    displayId: String(display.id)
-  };
-}
-
-function sendTrackerEvent(kind) {
-  if (!trackerStartedAt || !mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.webContents.send('tracker:event', cursorPayload(kind));
-}
-
-function startMouseHook() {
-  try {
-    const { uIOhook, UiohookKey } = require('uiohook-napi');
-    mouseHook = uIOhook;
-    mouseHook.on('mousedown', event => {
-      if (event.button === 1 || event.button === 0) sendTrackerEvent('click');
-    });
-    mouseHook.start();
-    return true;
-  } catch (error) {
-    console.warn('Global mouse hook unavailable:', error.message);
-    return false;
-  }
-}
-
-function stopTracker() {
-  trackerStartedAt = 0;
-  if (cursorTimer) clearInterval(cursorTimer);
-  cursorTimer = null;
-  if (mouseHook) {
-    try { mouseHook.stop(); } catch {}
-    mouseHook = null;
-  }
-  globalShortcut.unregister('CommandOrControl+Shift+Z');
-}
-
 app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     callback(['media', 'display-capture'].includes(permission));
@@ -89,29 +54,19 @@ app.whenReady().then(() => {
   }, { useSystemPicker: true });
 
   createWindow();
+  registerRecordingHotkey();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
 app.on('window-all-closed', () => {
-  stopTracker();
   if (process.platform !== 'darwin') app.quit();
 });
 
-ipcMain.handle('tracker:start', () => {
-  stopTracker();
-  trackerStartedAt = Date.now();
-  const hookAvailable = startMouseHook();
-  cursorTimer = setInterval(() => sendTrackerEvent('move'), 33);
-  globalShortcut.register('CommandOrControl+Shift+Z', () => sendTrackerEvent('click'));
-  return { startedAt: trackerStartedAt, hookAvailable };
-});
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
-ipcMain.handle('tracker:stop', () => {
-  stopTracker();
-  return true;
-});
+ipcMain.handle('hotkey:set', (_event, accelerator) => registerRecordingHotkey(accelerator));
 
 ipcMain.handle('export:mp4', async (_event, bytes) => {
   const choice = await dialog.showSaveDialog(mainWindow, {
