@@ -16,6 +16,7 @@ ClickFilm is a local-first Windows screen recorder that turns an ordinary record
 - Local MP4 rendering through FFmpeg
 - Faster-than-real-time local export without replaying the recording
 - No account, cloud upload, analytics, or paid API
+- English, Simplified Chinese, and Traditional Chinese interface languages
 
 ## Run locally
 
