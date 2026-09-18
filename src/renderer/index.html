@@ -23,6 +23,12 @@
         <div class="source-heading"><div><strong>Choose a window to record</strong><small>Only this window will appear in the video</small></div><button id="refresh-sources" class="ghost-button">Refresh</button></div>
         <div id="source-list" class="source-list"><p class="source-loading">Finding open windows…</p></div>
 
+        <div class="audio-picker">
+          <div class="source-heading"><div><strong>Choose app audio</strong><small>Select any number of apps, or none for a silent recording</small></div><button id="refresh-audio" class="ghost-button">Refresh</button></div>
+          <div id="audio-list" class="audio-list"><p class="source-loading">Finding apps…</p></div>
+          <p id="audio-support" class="audio-support">Only checked apps will be included. Other system sounds are excluded.</p>
+        </div>
+
         <button id="start-button" class="record-card" disabled>
           <span class="record-icon"><i></i></span>
           <span><strong>Start recording</strong><small id="selected-source-label">Select a window above first</small></span>
@@ -74,7 +80,9 @@
                 <button class="swatch" data-background="ocean" style="--swatch:linear-gradient(135deg,#076585,#45b5aa)"></button>
                 <button class="swatch" data-background="sunset" style="--swatch:linear-gradient(135deg,#f857a6,#ff5858)"></button>
                 <button class="swatch" data-background="midnight" style="--swatch:#111625"></button>
+                <button class="swatch no-background" data-background="none" title="No background — full resolution">None</button>
               </div>
+              <p class="setting-help background-help">Choose None to preserve the recording's native resolution and aspect ratio.</p>
             </div>
             <div class="setting-group zoom-editor">
               <div class="setting-heading"><label>Custom zooms</label><button id="add-zoom" class="mini-button">+ Add zoom</button></div>
