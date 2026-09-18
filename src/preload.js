@@ -7,10 +7,12 @@ contextBridge.exposeInMainWorld('clickfilm', {
   listAudioApps: () => ipcRenderer.invoke('audio:list-apps'),
   startAudioCapture: pids => ipcRenderer.invoke('audio:start', pids),
   stopAudioCapture: () => ipcRenderer.invoke('audio:stop'),
+  storeRecording: bytes => ipcRenderer.invoke('recording:store', bytes),
+  clearRecording: () => ipcRenderer.invoke('recording:clear'),
   onRecordingToggle: callback => {
     const listener = () => callback();
     ipcRenderer.on('recording:toggle', listener);
     return () => ipcRenderer.removeListener('recording:toggle', listener);
   },
-  exportMp4: bytes => ipcRenderer.invoke('export:mp4', bytes)
+  exportMp4: payload => ipcRenderer.invoke('export:mp4', payload)
 });
