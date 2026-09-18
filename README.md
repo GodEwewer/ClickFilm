@@ -5,18 +5,20 @@ ClickFilm is a local-first Windows screen recorder that turns an ordinary record
 ## MVP features
 
 - Native screen or window picker
-- Screen and optional system-audio recording
+- One selected window per recording
+- OBS-style app audio picker: include multiple apps and exclude all unselected sounds
 - Customisable global start/stop recording hotkey (`Ctrl+Shift+R` by default)
 - Manual zooms with editable focal point, start time, duration, and strength
 - Smooth animated zoom preview and timeline segments
 - Gradient or solid presentation backgrounds
+- No-background export at the recording's native resolution and aspect ratio
 - 16:9, 9:16, and 1:1 output formats
 - Local MP4 rendering through FFmpeg
 - No account, cloud upload, analytics, or paid API
 
 ## Run locally
 
-Requirements: Node.js 20+ and Windows 10 or 11.
+Requirements: Node.js 20+ and Windows 10 build 20348 or newer (Windows 11 recommended for per-app audio).
 
 ```bash
 npm install
@@ -35,6 +37,8 @@ npm run build:win
 ```
 
 The installer and portable executable are written to `release/`. The included GitHub Actions workflow also builds both files on a Windows runner.
+
+The Windows workflow compiles the bundled ApplicationLoopback helper before packaging. It uses Microsoft's Windows Process Loopback API to create one isolated WAV track per selected app. ClickFilm mixes those tracks locally during MP4 export.
 
 ## Current MVP limitations
 
