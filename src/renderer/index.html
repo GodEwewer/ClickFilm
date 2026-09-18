@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClickFilm</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand"><span class="logo"><i></i></span><strong>ClickFilm</strong><em>ALPHA</em></div>
+      <div id="privacy-pill" class="privacy-pill"><span></span> Everything stays on this computer</div>
+    </header>
+
+    <main>
+      <section id="welcome-view" class="welcome-view">
+        <div class="intro">
+          <p class="eyebrow">SCREEN RECORDING, AUTOMATICALLY POLISHED</p>
+          <h1>Record normally.<br><span>Look professionally edited.</span></h1>
+          <p>ClickFilm follows your cursor and turns clicks into smooth, animated zooms—without uploading your recording anywhere.</p>
+        </div>
+
+        <button id="start-button" class="record-card">
+          <span class="record-icon"><i></i></span>
+          <span><strong>Start recording</strong><small>Choose a screen or window</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <div class="steps">
+          <div><b>01</b><strong>Record your screen</strong><span>Use your app naturally.</span></div>
+          <div><b>02</b><strong>Clicks become zooms</strong><span>Adjustable, smooth focus.</span></div>
+          <div><b>03</b><strong>Export and share</strong><span>Ready-to-post MP4.</span></div>
+        </div>
+      </section>
+
+      <section id="recording-view" class="recording-view hidden">
+        <div class="recording-status"><span class="pulse"></span><strong>Recording</strong><time id="timer">00:00</time></div>
+        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption">Clicks create automatic zooms</div></div>
+        <div class="recording-actions">
+          <button id="manual-zoom" class="secondary-button">Add zoom <kbd>Ctrl</kbd><i>+</i><kbd>Shift</kbd><i>+</i><kbd>Z</kbd></button>
+          <button id="stop-button" class="stop-button"><span></span> Stop recording</button>
+        </div>
+        <p id="hook-message" class="hint"></p>
+      </section>
+
+      <section id="editor-view" class="editor-view hidden">
+        <div class="editor-topbar">
+          <div><p class="eyebrow">PROJECT</p><h2>Untitled recording</h2></div>
+          <div class="topbar-actions"><button id="new-button" class="ghost-button">New recording</button><button id="export-button" class="export-button">Export MP4</button></div>
+        </div>
+
+        <div class="editor-grid">
+          <aside class="settings-panel">
+            <div class="setting-group">
+              <label>Format</label>
+              <div class="segmented" id="format-control">
+                <button class="active" data-format="landscape">16:9</button>
+                <button data-format="portrait">9:16</button>
+                <button data-format="square">1:1</button>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label>Background</label>
+              <div class="swatches" id="background-control">
+                <button class="swatch active" data-background="aurora" style="--swatch:linear-gradient(135deg,#5f64f5,#c45ddd)"></button>
+                <button class="swatch" data-background="ocean" style="--swatch:linear-gradient(135deg,#076585,#45b5aa)"></button>
+                <button class="swatch" data-background="sunset" style="--swatch:linear-gradient(135deg,#f857a6,#ff5858)"></button>
+                <button class="swatch" data-background="midnight" style="--swatch:#111625"></button>
+              </div>
+            </div>
+            <div class="setting-group">
+              <label for="zoom-strength">Zoom strength <output id="zoom-output">1.65×</output></label>
+              <input id="zoom-strength" type="range" min="1.2" max="2.2" value="1.65" step="0.05" />
+            </div>
+            <div class="setting-group stats">
+              <span><strong id="zoom-count">0</strong> auto zooms</span>
+              <span><strong id="duration-label">0:00</strong> duration</span>
+            </div>
+          </aside>
+
+          <div class="preview-column">
+            <div id="preview-stage" class="preview-stage aurora landscape">
+              <div id="video-window" class="video-window"><video id="playback-video" controls></video></div>
+            </div>
+            <div class="timeline">
+              <div class="timeline-ruler"><span>0:00</span><span id="mid-time">0:00</span><span id="end-time">0:00</span></div>
+              <div id="marker-track" class="marker-track"><div id="playhead" class="playhead"></div></div>
+            </div>
+          </div>
+        </div>
+        <div id="export-status" class="export-status hidden"><span class="spinner"></span><div><strong>Rendering your video…</strong><small>ClickFilm renders locally in real time. Keep the app open.</small></div><b id="export-progress">0%</b></div>
+      </section>
+    </main>
+
+    <canvas id="render-canvas" hidden></canvas>
+    <script src="renderer.js"></script>
+  </body>
+</html>
