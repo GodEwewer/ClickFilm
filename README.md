@@ -1,15 +1,14 @@
 # ClickFilm
 
-ClickFilm is a local-first Windows screen recorder that turns an ordinary recording into a polished product demo. It records cursor movement and clicks, creates automatic animated zooms, adds a presentation background, and exports an MP4.
+ClickFilm is a local-first Windows screen recorder that turns an ordinary recording into a polished product demo. Record naturally, add custom animated zooms in the editor, choose a presentation background, and export an MP4.
 
 ## MVP features
 
 - Native screen or window picker
 - Screen and optional system-audio recording
-- Global cursor tracking
-- Automatic zoom markers on mouse clicks
-- `Ctrl+Shift+Z` manual zoom marker while recording
-- Smooth animated zoom preview
+- Customisable global start/stop recording hotkey (`Ctrl+Shift+R` by default)
+- Manual zooms with editable focal point, start time, duration, and strength
+- Smooth animated zoom preview and timeline segments
 - Gradient or solid presentation backgrounds
 - 16:9, 9:16, and 1:1 output formats
 - Local MP4 rendering through FFmpeg
@@ -24,9 +23,9 @@ npm install
 npm start
 ```
 
-Click **Start recording**, choose a screen or window, and carry out the demonstration. ClickFilm automatically places zooms where you click. Stop the recording, review it, select a style, and export the result.
+Click **Start recording**, choose a screen or window, and carry out the demonstration. Stop the recording, move the playhead to a moment you want to emphasize, and click **Add zoom**. Click the preview to set the focal point, then adjust the zoom's timing, duration, and strength before exporting.
 
-> Global click detection uses `uiohook-napi`. If Windows blocks the hook or it is unavailable, recording still works and `Ctrl+Shift+Z` can add manual zooms.
+To change the recording shortcut, click the hotkey shown below **Start recording** and press a new key combination. ClickFilm remembers it on that computer.
 
 ## Build the Windows installer
 
@@ -46,7 +45,6 @@ The installer and portable executable are written to `release/`. The included Gi
 
 ## Roadmap
 
-- Editable zoom timeline
 - Trimming and silence removal
 - Captions and microphone recording
 - Camera overlay
