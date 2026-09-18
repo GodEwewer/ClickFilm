@@ -3,6 +3,7 @@
 
 #include <Windows.h>
 #include <iostream>
+#include <string>
 #include "LoopbackCapture.h"
 
 void usage()
