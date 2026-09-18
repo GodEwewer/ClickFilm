@@ -14,6 +14,7 @@ ClickFilm is a local-first Windows screen recorder that turns an ordinary record
 - No-background export at the recording's native resolution and aspect ratio
 - 16:9, 9:16, and 1:1 output formats
 - Local MP4 rendering through FFmpeg
+- Faster-than-real-time local export without replaying the recording
 - No account, cloud upload, analytics, or paid API
 
 ## Run locally
@@ -43,7 +44,7 @@ The Windows workflow compiles the bundled ApplicationLoopback helper before pack
 ## Current MVP limitations
 
 - Primary-display recording gives the most accurate cursor alignment.
-- Rendering occurs in real time, so a one-minute recording takes roughly one minute to export.
+- Export speed depends on resolution and edits, but it is no longer limited to the recording's duration.
 - Code signing is not configured, so Windows SmartScreen may warn about unsigned community builds.
 - Microphone and webcam tracks are planned for a later version.
 
@@ -53,7 +54,6 @@ The Windows workflow compiles the bundled ApplicationLoopback helper before pack
 - Captions and microphone recording
 - Camera overlay
 - GIF export
-- Faster-than-real-time rendering
 - Brand presets and 4K Pro exports
 
 ## License
