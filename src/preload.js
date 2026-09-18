@@ -1,12 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('clickfilm', {
-  startTracker: () => ipcRenderer.invoke('tracker:start'),
-  stopTracker: () => ipcRenderer.invoke('tracker:stop'),
-  onTrackerEvent: callback => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on('tracker:event', listener);
-    return () => ipcRenderer.removeListener('tracker:event', listener);
+  setRecordingHotkey: accelerator => ipcRenderer.invoke('hotkey:set', accelerator),
+  onRecordingToggle: callback => {
+    const listener = () => callback();
+    ipcRenderer.on('recording:toggle', listener);
+    return () => ipcRenderer.removeListener('recording:toggle', listener);
   },
   exportMp4: bytes => ipcRenderer.invoke('export:mp4', bytes)
 });
