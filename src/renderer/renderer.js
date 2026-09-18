@@ -22,6 +22,54 @@ const hotkeyStatus = document.querySelector('#hotkey-status');
 const sourceList = document.querySelector('#source-list');
 const selectedSourceLabel = document.querySelector('#selected-source-label');
 const audioList = document.querySelector('#audio-list');
+const languageSelect = document.querySelector('#language-select');
+
+const translations = {
+  en: {
+    language: 'Language', privacy: 'Everything stays on this computer', eyebrow: 'SCREEN RECORDING, AUTOMATICALLY POLISHED',
+    hero1: 'Record normally.', hero2: 'Look professionally edited.', intro: 'Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.',
+    chooseWindow: 'Choose a window to record', chooseWindowHelp: 'Only this window will appear in the video', refresh: 'Refresh', findingWindows: 'Finding open windows…',
+    chooseAudio: 'Choose app audio', chooseAudioHelp: 'Select any number of apps, or none for a silent recording', findingApps: 'Finding apps…', audioSupport: 'Only checked apps will be included. Other system sounds are excluded.',
+    startRecording: 'Start recording', selectWindowFirst: 'Select a window above first', recordingHotkey: 'Recording hotkey', hotkeyHelp: 'Works while ClickFilm is in the background', hotkeyPrompt: 'Click, then press your shortcut',
+    step1: 'Record your screen', step1Help: 'Use your app naturally.', step2: 'Design your zooms', step2Help: 'Choose the area, timing, and strength.', step3: 'Export and share', step3Help: 'Ready-to-post MP4.',
+    recording: 'Recording', recordNaturally: 'Record naturally — zooms are added later', stopRecording: 'Stop recording', recordingHint: 'Your recording stays untouched until you customise it in the editor.',
+    project: 'PROJECT', untitled: 'Untitled recording', newRecording: 'New recording', exportMp4: 'Export MP4', format: 'Format', background: 'Background', none: 'None', noneHelp: "Choose None to preserve the recording's native resolution and aspect ratio.",
+    customZooms: 'Custom zooms', addZoom: '+ Add zoom', zoomHelp: 'Move the playhead, add a zoom, then click the preview to choose its focus.', start: 'Start', duration: 'Duration', strength: 'Strength', deleteZoom: 'Delete selected zoom', customZoomsStat: 'custom zooms', durationStat: 'duration',
+    pressShortcut: 'Press shortcut…', shortcutInstructions: 'Use Ctrl, Alt, Shift, or the Windows key plus another key.', shortcutInvalid: 'That shortcut needs a modifier and a letter, number, or function key.', shortcutReady: 'Shortcut ready.', shortcutUsed: 'Windows is already using that shortcut. The previous shortcut is still active.',
+    noWindows: 'No recordable windows found. Open the app you want to record, then press Refresh.', noApps: 'No apps with open windows found. Open an app, play audio, then press Refresh.', findingError: 'Could not load the list.', startNewFirst: 'Start a new project before recording again.',
+    exportRendering: 'Rendering locally with FFmpeg…', exportHelp: 'This runs as fast as your computer allows—no real-time playback required.', exportComplete: 'Export complete', exportFailed: 'Export failed', recordingFailed: 'Could not start recording. Refresh the window list and try again.'
+  },
+  'zh-CN': {
+    language: '语言', privacy: '所有内容仅保存在此电脑上', eyebrow: '屏幕录制，自动美化', hero1: '正常录制。', hero2: '呈现专业剪辑效果。', intro: '录制一个应用窗口，再在需要的位置添加精准流畅的缩放效果，无需上传任何录像。',
+    chooseWindow: '选择要录制的窗口', chooseWindowHelp: '视频中只会显示此窗口', refresh: '刷新', findingWindows: '正在查找已打开的窗口…', chooseAudio: '选择应用音频', chooseAudioHelp: '可选择多个应用，或不选择以录制静音视频', findingApps: '正在查找应用…', audioSupport: '只会收录已勾选应用的声音，其他系统声音将被排除。',
+    startRecording: '开始录制', selectWindowFirst: '请先在上方选择一个窗口', recordingHotkey: '录制快捷键', hotkeyHelp: 'ClickFilm 在后台时仍可使用', hotkeyPrompt: '点击后按下新的快捷键', step1: '录制屏幕', step1Help: '正常使用你的应用。', step2: '设计缩放效果', step2Help: '选择区域、时间和缩放强度。', step3: '导出并分享', step3Help: '生成可直接发布的 MP4。',
+    recording: '正在录制', recordNaturally: '正常录制——缩放效果稍后添加', stopRecording: '停止录制', recordingHint: '录像会保持原样，直到你在编辑器中进行调整。', project: '项目', untitled: '未命名录像', newRecording: '新建录像', exportMp4: '导出 MP4', format: '画面比例', background: '背景', none: '无', noneHelp: '选择“无”可保留录像的原始分辨率和宽高比。',
+    customZooms: '自定义缩放', addZoom: '+ 添加缩放', zoomHelp: '移动播放指针并添加缩放，然后点击预览画面选择焦点。', start: '开始时间', duration: '持续时间', strength: '缩放强度', deleteZoom: '删除所选缩放', customZoomsStat: '个自定义缩放', durationStat: '时长',
+    pressShortcut: '请按快捷键…', shortcutInstructions: '请使用 Ctrl、Alt、Shift 或 Windows 键搭配另一个按键。', shortcutInvalid: '快捷键必须包含修饰键以及字母、数字或功能键。', shortcutReady: '快捷键已启用。', shortcutUsed: '该快捷键已被 Windows 占用，之前的快捷键仍然有效。', noWindows: '未找到可录制的窗口。请打开目标应用后点击“刷新”。', noApps: '未找到带有窗口的应用。请打开应用并播放声音后点击“刷新”。', findingError: '无法加载列表。', startNewFirst: '请先新建项目再开始录制。',
+    exportRendering: '正在使用 FFmpeg 本地渲染…', exportHelp: '将以电脑可达到的最快速度运行，无需实时播放。', exportComplete: '导出完成', exportFailed: '导出失败', recordingFailed: '无法开始录制。请刷新窗口列表后重试。'
+  },
+  'zh-TW': {
+    language: '語言', privacy: '所有內容僅儲存在此電腦上', eyebrow: '螢幕錄製，自動美化', hero1: '正常錄製。', hero2: '呈現專業剪輯效果。', intro: '錄製一個應用程式視窗，再於需要的位置加入精準流暢的縮放效果，無需上傳任何錄影。',
+    chooseWindow: '選擇要錄製的視窗', chooseWindowHelp: '影片中只會顯示此視窗', refresh: '重新整理', findingWindows: '正在尋找已開啟的視窗…', chooseAudio: '選擇應用程式音訊', chooseAudioHelp: '可選擇多個應用程式，或不選擇以錄製靜音影片', findingApps: '正在尋找應用程式…', audioSupport: '只會收錄已勾選應用程式的聲音，其他系統聲音將被排除。',
+    startRecording: '開始錄製', selectWindowFirst: '請先在上方選擇一個視窗', recordingHotkey: '錄製快捷鍵', hotkeyHelp: 'ClickFilm 在背景執行時仍可使用', hotkeyPrompt: '點擊後按下新的快捷鍵', step1: '錄製螢幕', step1Help: '正常使用你的應用程式。', step2: '設計縮放效果', step2Help: '選擇區域、時間和縮放強度。', step3: '匯出並分享', step3Help: '產生可直接發佈的 MP4。',
+    recording: '正在錄製', recordNaturally: '正常錄製——縮放效果稍後加入', stopRecording: '停止錄製', recordingHint: '錄影會保持原樣，直到你在編輯器中進行調整。', project: '專案', untitled: '未命名錄影', newRecording: '新增錄影', exportMp4: '匯出 MP4', format: '畫面比例', background: '背景', none: '無', noneHelp: '選擇「無」可保留錄影的原始解析度和長寬比。',
+    customZooms: '自訂縮放', addZoom: '+ 加入縮放', zoomHelp: '移動播放指標並加入縮放，然後點擊預覽畫面選擇焦點。', start: '開始時間', duration: '持續時間', strength: '縮放強度', deleteZoom: '刪除所選縮放', customZoomsStat: '個自訂縮放', durationStat: '片長',
+    pressShortcut: '請按快捷鍵…', shortcutInstructions: '請使用 Ctrl、Alt、Shift 或 Windows 鍵搭配另一個按鍵。', shortcutInvalid: '快捷鍵必須包含修飾鍵以及字母、數字或功能鍵。', shortcutReady: '快捷鍵已啟用。', shortcutUsed: '該快捷鍵已被 Windows 使用，先前的快捷鍵仍然有效。', noWindows: '找不到可錄製的視窗。請開啟目標應用程式後按「重新整理」。', noApps: '找不到具有視窗的應用程式。請開啟應用程式並播放聲音後按「重新整理」。', findingError: '無法載入清單。', startNewFirst: '請先新增專案再開始錄製。',
+    exportRendering: '正在使用 FFmpeg 於本機轉譯…', exportHelp: '將以電腦可達到的最快速度執行，無需即時播放。', exportComplete: '匯出完成', exportFailed: '匯出失敗', recordingFailed: '無法開始錄製。請重新整理視窗清單後再試。'
+  }
+};
+
+let currentLanguage = localStorage.getItem('language') || 'en';
+function tr(key) { return translations[currentLanguage]?.[key] || translations.en[key] || key; }
+function applyLanguage(language) {
+  currentLanguage = translations[language] ? language : 'en';
+  localStorage.setItem('language', currentLanguage);
+  document.documentElement.lang = currentLanguage;
+  languageSelect.value = currentLanguage;
+  document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = tr(node.dataset.i18n); });
+}
+languageSelect.addEventListener('change', event => applyLanguage(event.target.value));
+applyLanguage(currentLanguage);
 
 let captureStream;
 let recorder;
@@ -61,7 +109,7 @@ window.clickfilm.onRecordingToggle(() => {
   if (recorder?.state === 'recording') stopRecording();
   else if (!views.recording.classList.contains('hidden')) return;
   else if (!views.editor.classList.contains('hidden')) {
-    hotkeyStatus.textContent = 'Start a new project before recording again.';
+    hotkeyStatus.textContent = tr('startNewFirst');
   } else startRecording();
 });
 
@@ -73,8 +121,8 @@ loadAudioApps();
 function beginHotkeyCapture() {
   capturingHotkey = true;
   hotkeyButton.classList.add('listening');
-  hotkeyButton.textContent = 'Press shortcut…';
-  hotkeyStatus.textContent = 'Use Ctrl, Alt, Shift, or the Windows key plus another key.';
+  hotkeyButton.textContent = tr('pressShortcut');
+  hotkeyStatus.textContent = tr('shortcutInstructions');
   window.addEventListener('keydown', captureHotkey, { capture: true });
 }
 
@@ -89,7 +137,7 @@ function captureHotkey(event) {
   if (!accelerator) {
     hotkeyButton.classList.remove('listening');
     setHotkey(localStorage.getItem('recordingHotkey') || 'CommandOrControl+Shift+R', false);
-    hotkeyStatus.textContent = 'That shortcut needs a modifier and a letter, number, or function key.';
+    hotkeyStatus.textContent = tr('shortcutInvalid');
     return;
   }
   setHotkey(accelerator, true);
@@ -98,13 +146,14 @@ function captureHotkey(event) {
 async function loadCaptureSources() {
   startButton.disabled = true;
   selectedSourceId = null;
-  selectedSourceLabel.textContent = 'Select a window above first';
-  sourceList.innerHTML = '<p class="source-loading">Finding open windows…</p>';
+  selectedSourceLabel.dataset.i18n = 'selectWindowFirst';
+  selectedSourceLabel.textContent = tr('selectWindowFirst');
+  sourceList.innerHTML = `<p class="source-loading">${tr('findingWindows')}</p>`;
   try {
     const sources = await window.clickfilm.listCaptureSources();
     sourceList.replaceChildren();
     if (!sources.length) {
-      sourceList.innerHTML = '<p class="source-loading">No recordable windows found. Open the app you want to record, then press Refresh.</p>';
+      sourceList.innerHTML = `<p class="source-loading">${tr('noWindows')}</p>`;
       return;
     }
     sources.forEach(source => {
@@ -121,7 +170,7 @@ async function loadCaptureSources() {
       sourceList.appendChild(button);
     });
   } catch (error) {
-    sourceList.innerHTML = `<p class="source-loading">Could not list windows: ${escapeText(error.message)}</p>`;
+    sourceList.innerHTML = `<p class="source-loading">${tr('findingError')} ${escapeText(error.message)}</p>`;
   }
 }
 
@@ -129,6 +178,7 @@ async function selectCaptureSource(source, button) {
   const selected = await window.clickfilm.selectCaptureSource(source.id);
   if (!selected) return;
   selectedSourceId = source.id;
+  delete selectedSourceLabel.dataset.i18n;
   sourceList.querySelectorAll('.source-card').forEach(card => card.classList.toggle('selected', card === button));
   selectedSourceLabel.textContent = source.name;
   startButton.disabled = false;
@@ -140,12 +190,12 @@ function escapeText(value) {
 
 async function loadAudioApps() {
   const checked = new Set(selectedAudioPids());
-  audioList.innerHTML = '<p class="source-loading">Finding apps…</p>';
+  audioList.innerHTML = `<p class="source-loading">${tr('findingApps')}</p>`;
   try {
     const apps = await window.clickfilm.listAudioApps();
     audioList.replaceChildren();
     if (!apps.length) {
-      audioList.innerHTML = '<p class="source-loading">No apps with open windows found. Open an app, play audio, then press Refresh.</p>';
+      audioList.innerHTML = `<p class="source-loading">${tr('noApps')}</p>`;
       return;
     }
     apps.forEach(app => {
@@ -162,7 +212,7 @@ async function loadAudioApps() {
       audioList.appendChild(label);
     });
   } catch (error) {
-    audioList.innerHTML = `<p class="source-loading">Could not list audio apps: ${escapeText(error.message)}</p>`;
+    audioList.innerHTML = `<p class="source-loading">${tr('findingError')} ${escapeText(error.message)}</p>`;
   }
 }
 
@@ -176,9 +226,9 @@ async function setHotkey(accelerator, persist) {
   renderHotkey(result.accelerator);
   if (result.ok) {
     if (persist) localStorage.setItem('recordingHotkey', result.accelerator);
-    hotkeyStatus.textContent = 'Shortcut ready.';
+    hotkeyStatus.textContent = tr('shortcutReady');
   } else {
-    hotkeyStatus.textContent = 'Windows is already using that shortcut. The previous shortcut is still active.';
+    hotkeyStatus.textContent = tr('shortcutUsed');
   }
 }
 
@@ -203,7 +253,7 @@ function renderHotkey(accelerator) {
 async function startRecording() {
   if (!selectedSourceId) {
     showView('welcome');
-    selectedSourceLabel.textContent = 'Select a window above first';
+    selectedSourceLabel.textContent = tr('selectWindowFirst');
     return;
   }
   try {
@@ -234,7 +284,7 @@ async function startRecording() {
     timerInterval = setInterval(updateTimer, 250);
   } catch (error) {
     await window.clickfilm.stopAudioCapture().catch(() => {});
-    alert(`Could not start recording: ${error.message || error.name}. Refresh the window list and try again.`);
+    alert(`${tr('recordingFailed')}\n${error.message || error.name}`);
   }
 }
 
@@ -423,8 +473,8 @@ async function exportVideo() {
   exportStatus.classList.remove('hidden');
   exportProgress.textContent = '0%';
   try {
-    exportStatus.querySelector('strong').textContent = 'Rendering locally with FFmpeg…';
-    exportStatus.querySelector('small').textContent = 'This runs as fast as your computer allows—no real-time playback required.';
+    exportStatus.querySelector('strong').textContent = tr('exportRendering');
+    exportStatus.querySelector('small').textContent = tr('exportHelp');
     exportProgress.textContent = 'FAST';
     await localRecordingPromise;
     const result = await window.clickfilm.exportMp4({
@@ -437,7 +487,7 @@ async function exportVideo() {
       }
     });
     if (result.ok) {
-      exportStatus.querySelector('strong').textContent = 'Export complete';
+      exportStatus.querySelector('strong').textContent = tr('exportComplete');
       exportStatus.querySelector('small').textContent = result.path;
       exportProgress.textContent = '100%';
       setTimeout(() => exportStatus.classList.add('hidden'), 5000);
@@ -448,7 +498,7 @@ async function exportVideo() {
     }
   } catch (error) {
     exportStatus.classList.add('hidden');
-    alert(`Export failed: ${error.message}`);
+    alert(`${tr('exportFailed')}: ${error.message}`);
   } finally {
     document.querySelector('#export-button').disabled = false;
     exportStatus.querySelector('strong').textContent = 'Rendering your video…';
