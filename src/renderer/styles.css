@@ -17,12 +17,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 button, input, video, .source-list { -webkit-app-region: no-drag; }
 .hidden { display: none !important; }
 .app-header { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid rgba(255,255,255,.07); -webkit-app-region: drag; }
-.brand, .privacy-pill { display: flex; align-items: center; }
+.brand, .privacy-pill, .header-actions, .language-picker { display: flex; align-items: center; }
+.header-actions { gap: 16px; }
+.language-picker { gap: 7px; color: #8f97aa; font-size: .68rem; -webkit-app-region: no-drag; }
+.language-picker select { padding: 6px 24px 6px 8px; border: 1px solid #343a4d; border-radius: 7px; color: #d5d8e2; background: #141824; }
 .brand { gap: 10px; letter-spacing: -.02em; }
 .brand em { padding: 3px 6px; border: 1px solid #3c4257; border-radius: 5px; color: #8890a4; font-size: .58rem; font-style: normal; letter-spacing: .12em; }
 .logo { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--pink)); box-shadow: 0 0 25px rgba(125,115,255,.28); }
 .logo i { width: 8px; height: 8px; border: 2px solid white; border-radius: 50%; }
 .privacy-pill { gap: 8px; color: #8f97aa; font-size: .72rem; -webkit-app-region: no-drag; }
+.privacy-pill b { font-weight: 500; }
 .privacy-pill span { width: 7px; height: 7px; border-radius: 50%; background: #5ddaa2; box-shadow: 0 0 10px #5ddaa2; }
 main { min-height: calc(100vh - 70px); }
 .welcome-view { width: min(940px, calc(100% - 60px)); margin: 0 auto; padding: 75px 0 50px; }
@@ -30,6 +34,7 @@ main { min-height: calc(100vh - 70px); }
 .eyebrow { margin: 0 0 15px; color: #a8a0ff; font-size: .67rem; font-weight: 700; letter-spacing: .17em; }
 h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.04; letter-spacing: -.065em; }
 h1 span { color: #8c93a6; }
+h1 .hero-primary { color: var(--text); }
 .intro > p:last-child { max-width: 600px; margin: 21px auto 42px; color: var(--muted); line-height: 1.7; }
 .record-card { width: min(660px, 100%); min-height: 94px; margin: 0 auto; padding: 18px 22px; display: flex; align-items: center; gap: 17px; border: 1px solid #373c55; border-radius: 17px; background: linear-gradient(180deg,#171b29,#111520); box-shadow: 0 30px 80px rgba(0,0,0,.32); text-align: left; transition: transform .2s, border-color .2s; }
 .source-heading { width: min(660px, 100%); margin: 0 auto 10px; display: flex; align-items: center; justify-content: space-between; text-align: left; }
