@@ -1,7 +1,7 @@
 {
   "name": "clickfilm",
   "version": "0.1.0",
-  "description": "Turn ordinary screen recordings into polished demos with automatic click zooms.",
+  "description": "Turn ordinary screen recordings into polished demos with custom zooms.",
   "main": "src/main.js",
   "author": "ClickFilm",
   "license": "MIT",
@@ -11,8 +11,7 @@
     "dist": "electron-builder"
   },
   "dependencies": {
-    "ffmpeg-static": "^5.2.0",
-    "uiohook-napi": "^1.5.4"
+    "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
     "electron": "^38.0.0",
@@ -23,8 +22,7 @@
     "productName": "ClickFilm",
     "asar": true,
     "asarUnpack": [
-      "node_modules/ffmpeg-static/**",
-      "node_modules/uiohook-napi/**"
+      "node_modules/ffmpeg-static/**"
     ],
     "files": [
       "src/**/*",
@@ -37,17 +35,15 @@
       "target": [
         "nsis",
         "portable"
-      ]
+      ],
+      "artifactName": "ClickFilm-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
-      "artifactName": "ClickFilm-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
-    "portable": {
-      "artifactName": "ClickFilm-Portable-${version}-${arch}.${ext}"
-    }
+    "portable": { "artifactName": "ClickFilm-Portable-${version}-${arch}.${ext}" }
   }
 }
