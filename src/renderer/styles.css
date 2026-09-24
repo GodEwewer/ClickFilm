@@ -70,6 +70,10 @@ h1 .hero-primary { color: var(--text); }
 .hotkey-button.listening { border-color: #9187ff; box-shadow: 0 0 0 3px rgba(145,135,255,.14); }
 .hotkey-button i { margin: 0 3px; color: #697187; font-style: normal; }
 .hotkey-status { grid-column: 1 / -1; min-height: 12px; }
+.output-setting { width: min(660px, 100%); margin: 10px auto 0; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(17,21,32,.72); }
+.output-setting strong, .output-setting small { display: block; }
+.output-setting strong { font-size: .76rem; }
+.output-setting small { max-width: 470px; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: .66rem; text-overflow: ellipsis; white-space: nowrap; }
 .record-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: rgba(218,80,105,.12); }
 .record-icon i { width: 16px; height: 16px; border-radius: 50%; background: #f45e76; box-shadow: 0 0 20px rgba(244,94,118,.5); }
 .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin-top: 64px; border-block: 1px solid var(--line); background: var(--line); }
