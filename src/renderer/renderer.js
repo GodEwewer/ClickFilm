@@ -77,6 +77,8 @@ let timerInterval;
 let rawRecordingUrl;
 let rawRecordingBlob;
 let localRecordingPromise;
+let recordingWritePromise = Promise.resolve();
+let audioStopPromise = Promise.resolve();
 let selectedSourceId = null;
 let capturingHotkey = false;
 function showView(name) {
@@ -111,7 +113,6 @@ function playRecordingCue(kind) {
 startButton.addEventListener('click', startRecording);
 stopButton.addEventListener('click', stopRecording);
 document.querySelector('#new-button').addEventListener('click', resetProject);
-document.querySelector('#export-button').addEventListener('click', exportVideo);
 hotkeyButton.addEventListener('click', beginHotkeyCapture);
 document.querySelector('#refresh-sources').addEventListener('click', loadCaptureSources);
 document.querySelector('#refresh-audio').addEventListener('click', loadAudioApps);
@@ -297,8 +298,17 @@ async function startRecording() {
       ? 'video/webm;codecs=vp9,opus'
       : 'video/webm';
     recorder = new MediaRecorder(captureStream, { mimeType, videoBitsPerSecond: 24_000_000 });
+    await window.clickfilm.beginRecordingStore();
     chunks = [];
-    recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+    recordingWritePromise = Promise.resolve();
+    recorder.ondataavailable = event => {
+      if (!event.data.size) return;
+      chunks.push(event.data);
+      recordingWritePromise = recordingWritePromise.then(async () => {
+        const buffer = await event.data.arrayBuffer();
+        return window.clickfilm.appendRecordingChunk(new Uint8Array(buffer));
+      });
+    };
     recorder.onstop = finishRecording;
     captureStream.getVideoTracks()[0].addEventListener('ended', () => {
       if (recorder?.state === 'recording') stopRecording();
@@ -326,15 +336,16 @@ async function stopRecording() {
   clearInterval(timerInterval);
   recorder.stop();
   captureStream.getTracks().forEach(track => track.stop());
-  await window.clickfilm.stopAudioCapture();
+  audioStopPromise = window.clickfilm.stopAudioCapture();
+  await audioStopPromise;
   playRecordingCue('stop');
 }
 
 function finishRecording() {
   const blob = new Blob(chunks, { type: recorder.mimeType });
   rawRecordingBlob = blob;
-  localRecordingPromise = blob.arrayBuffer()
-    .then(buffer => window.clickfilm.storeRecording(new Uint8Array(buffer)));
+  localRecordingPromise = Promise.all([recordingWritePromise, audioStopPromise])
+    .then(() => window.clickfilm.finishRecordingStore());
   if (rawRecordingUrl) URL.revokeObjectURL(rawRecordingUrl);
   rawRecordingUrl = URL.createObjectURL(blob);
   playbackVideo.src = rawRecordingUrl;
@@ -342,11 +353,13 @@ function finishRecording() {
     document.querySelector('#duration-label').textContent = formatTime(playbackVideo.duration);
   };
   showView('editor');
+  exportVideo();
 }
 
 async function exportVideo() {
-  if (!playbackVideo.duration || !rawRecordingBlob) return;
-  document.querySelector('#export-button').disabled = true;
+  if (!rawRecordingBlob) return;
+  const newButton = document.querySelector('#new-button');
+  newButton.disabled = true;
   exportStatus.classList.remove('hidden');
   exportProgress.textContent = '0%';
   try {
@@ -369,7 +382,7 @@ async function exportVideo() {
     exportStatus.classList.add('hidden');
     alert(`${tr('exportFailed')}: ${error.message}`);
   } finally {
-    document.querySelector('#export-button').disabled = false;
+    newButton.disabled = false;
     exportStatus.querySelector('strong').textContent = 'Rendering your video…';
     exportStatus.querySelector('small').textContent = 'ClickFilm renders locally with FFmpeg. Keep the app open.';
   }
