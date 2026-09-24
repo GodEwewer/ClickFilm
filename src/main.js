@@ -10,6 +10,24 @@ let selectedCaptureSourceId = null;
 let audioCaptures = [];
 let audioSessionDir = null;
 let currentRecordingFile = null;
+let outputDirectory = null;
+let preferencesPath = null;
+
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+function recordingFileName(date = new Date()) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `ClickFilm-${day}.${month}.${year}-${hour}.${minute}.mp4`;
+}
+
+async function savePreferences() {
+  if (!preferencesPath) return;
+  await fs.promises.writeFile(preferencesPath, JSON.stringify({ outputDirectory }, null, 2));
+}
 
 function registerRecordingHotkey(accelerator = recordingAccelerator) {
   globalShortcut.unregister(recordingAccelerator);
@@ -51,25 +69,8 @@ function resolveAudioHelperPath() {
     : path.join(__dirname, '..', 'native', 'bin', 'ApplicationLoopback.exe');
 }
 
-function buildVideoFilter(spec) {
-  const filters = [];
-  const input = '[0:v]';
-  if (spec.background === 'none') {
-    filters.push(`${input}setsar=1[videoout]`);
-    return filters;
-  }
-  const sizes = { landscape: [1920, 1080], portrait: [1080, 1920], square: [1080, 1080] };
-  const [width, height] = sizes[spec.format] || sizes.landscape;
-  const margin = spec.format === 'portrait' ? Math.round(width * .065) : Math.round(Math.min(width, height) * .075);
-  const backgrounds = {
-    aurora: ['0x4f5ee7', '0xb454cf'], ocean: ['0x076585', '0x45b5aa'],
-    sunset: ['0xf857a6', '0xff5858'], midnight: ['0x111625', '0x111625']
-  };
-  const [start, end] = backgrounds[spec.background] || backgrounds.aurora;
-  filters.push(`gradients=s=${width}x${height}:c0=${start}:c1=${end}:x0=0:y0=0:x1=${width}:y1=${height}[bg]`);
-  filters.push(`${input}scale=${width - margin * 2}:${height - margin * 2}:force_original_aspect_ratio=decrease[foreground]`);
-  filters.push(`[bg][foreground]overlay=(W-w)/2:(H-h)/2:shortest=1,setsar=1[videoout]`);
-  return filters;
+function buildVideoFilter() {
+  return ['[0:v]setsar=1[videoout]'];
 }
 
 async function stopAudioCaptures() {
@@ -86,6 +87,13 @@ async function stopAudioCaptures() {
 }
 
 app.whenReady().then(() => {
+  preferencesPath = path.join(app.getPath('userData'), 'preferences.json');
+  outputDirectory = path.join(app.getPath('videos'), 'ClickFilm');
+  try {
+    const saved = JSON.parse(fs.readFileSync(preferencesPath, 'utf8'));
+    if (saved.outputDirectory && path.isAbsolute(saved.outputDirectory)) outputDirectory = saved.outputDirectory;
+  } catch {}
+  fs.mkdirSync(outputDirectory, { recursive: true });
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     callback(['media', 'display-capture'].includes(permission));
   });
@@ -136,7 +144,7 @@ ipcMain.handle('capture:select-source', (_event, sourceId) => {
 
 ipcMain.handle('audio:list-apps', async () => {
   if (process.platform !== 'win32') return [];
-  const script = "Get-Process | Where-Object { $_.MainWindowTitle -ne '' -and $_.Id -ne $PID } | Select-Object Id,ProcessName,MainWindowTitle | ConvertTo-Json -Compress";
+  const script = `Get-Process | Where-Object { $_.MainWindowTitle -ne '' -and $_.Id -ne ${process.pid} } | Select-Object Id,ProcessName,MainWindowTitle | ConvertTo-Json -Compress`;
   return new Promise(resolve => execFile('powershell.exe', ['-NoProfile', '-Command', script], { windowsHide: true }, (error, stdout) => {
     if (error || !stdout.trim()) return resolve([]);
     try {
@@ -177,17 +185,34 @@ ipcMain.handle('recording:clear', async () => {
   return true;
 });
 
+ipcMain.handle('output:get', () => outputDirectory);
+
+ipcMain.handle('output:choose', async () => {
+  const choice = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose default ClickFilm folder',
+    defaultPath: outputDirectory,
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (choice.canceled || !choice.filePaths[0]) return { canceled: true, path: outputDirectory };
+  outputDirectory = choice.filePaths[0];
+  await fs.promises.mkdir(outputDirectory, { recursive: true });
+  await savePreferences();
+  return { canceled: false, path: outputDirectory };
+});
+
 ipcMain.handle('export:mp4', async (_event, payload) => {
+  await fs.promises.mkdir(outputDirectory, { recursive: true });
   const choice = await dialog.showSaveDialog(mainWindow, {
     title: 'Save ClickFilm video',
-    defaultPath: `ClickFilm-${new Date().toISOString().slice(0, 10)}.mp4`,
+    defaultPath: path.join(outputDirectory, recordingFileName()),
     filters: [{ name: 'MP4 video', extensions: ['mp4'] }]
   });
   if (choice.canceled || !choice.filePath) return { canceled: true };
+  outputDirectory = path.dirname(choice.filePath);
+  await savePreferences();
 
   const tempFile = currentRecordingFile || path.join(os.tmpdir(), `clickfilm-${Date.now()}.webm`);
   const bytes = payload?.bytes;
-  const spec = payload?.spec || { background: 'none', format: 'landscape' };
   if (!currentRecordingFile && bytes) await fs.promises.writeFile(tempFile, Buffer.from(bytes));
   if (!fs.existsSync(tempFile)) return { canceled: false, ok: false, error: 'The local source recording is missing.' };
   const ffmpeg = resolveFfmpegPath();
@@ -198,7 +223,7 @@ ipcMain.handle('export:mp4', async (_event, payload) => {
   return new Promise(resolve => {
     const args = ['-y', '-i', tempFile];
     audioFiles.forEach(file => args.push('-i', file));
-    const filters = buildVideoFilter(spec);
+    const filters = buildVideoFilter();
     if (audioFiles.length > 1) {
       const inputs = audioFiles.map((_file, index) => `[${index + 1}:a]`).join('');
       filters.push(`${inputs}amix=inputs=${audioFiles.length}:duration=longest:normalize=0[aout]`);
