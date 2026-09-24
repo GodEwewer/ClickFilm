@@ -51,42 +51,9 @@ function resolveAudioHelperPath() {
     : path.join(__dirname, '..', 'native', 'bin', 'ApplicationLoopback.exe');
 }
 
-function ffmpegNumber(value, fallback = 0) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
-}
-
-function buildZoomExpressions(zooms) {
-  let zoom = '1';
-  let x = '(iw-iw/zoom)/2';
-  let y = '(ih-ih/zoom)/2';
-  [...zooms].reverse().forEach(item => {
-    const start = ffmpegNumber(item.startMs) / 1000;
-    const duration = Math.max(.1, ffmpegNumber(item.durationMs, 1500) / 1000);
-    const end = start + duration;
-    const transition = Math.min(.3, duration * .25);
-    const scale = Math.max(1, ffmpegNumber(item.scale, 1.65));
-    const focusX = Math.max(0, Math.min(1, ffmpegNumber(item.x, .5)));
-    const focusY = Math.max(0, Math.min(1, ffmpegNumber(item.y, .5)));
-    const animated = `if(lt(in_time-${start},${transition}),1+(${scale}-1)*(in_time-${start})/${transition},if(gt(in_time,${end - transition}),1+(${scale}-1)*(${end}-in_time)/${transition},${scale}))`;
-    zoom = `if(between(in_time,${start},${end}),${animated},${zoom})`;
-    x = `if(between(in_time,${start},${end}),(iw-iw/zoom)*${focusX},${x})`;
-    y = `if(between(in_time,${start},${end}),(ih-ih/zoom)*${focusY},${y})`;
-  });
-  return { zoom, x, y };
-}
-
 function buildVideoFilter(spec) {
-  const sourceWidth = Math.max(2, Math.round(ffmpegNumber(spec.sourceWidth, 1920) / 2) * 2);
-  const sourceHeight = Math.max(2, Math.round(ffmpegNumber(spec.sourceHeight, 1080) / 2) * 2);
-  const zooms = Array.isArray(spec.zooms) ? spec.zooms : [];
-  const expressions = buildZoomExpressions(zooms);
   const filters = [];
-  let input = '[0:v]';
-  if (zooms.length) {
-    filters.push(`${input}zoompan=z='${expressions.zoom}':x='${expressions.x}':y='${expressions.y}':d=1:fps=30:s=${sourceWidth}x${sourceHeight}[zoomed]`);
-    input = '[zoomed]';
-  }
+  const input = '[0:v]';
   if (spec.background === 'none') {
     filters.push(`${input}setsar=1[videoout]`);
     return filters;
@@ -220,7 +187,7 @@ ipcMain.handle('export:mp4', async (_event, payload) => {
 
   const tempFile = currentRecordingFile || path.join(os.tmpdir(), `clickfilm-${Date.now()}.webm`);
   const bytes = payload?.bytes;
-  const spec = payload?.spec || { background: 'none', format: 'landscape', zooms: [] };
+  const spec = payload?.spec || { background: 'none', format: 'landscape' };
   if (!currentRecordingFile && bytes) await fs.promises.writeFile(tempFile, Buffer.from(bytes));
   if (!fs.existsSync(tempFile)) return { canceled: false, ok: false, error: 'The local source recording is missing.' };
   const ffmpeg = resolveFfmpegPath();
@@ -239,7 +206,7 @@ ipcMain.handle('export:mp4', async (_event, payload) => {
     args.push('-filter_complex', filters.join(';'), '-map', '[videoout]');
     if (audioFiles.length === 1) args.push('-map', '1:a:0');
     else if (audioFiles.length > 1) args.push('-map', '[aout]');
-    args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
+    args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '16', '-profile:v', 'high', '-level', '5.2', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
     if (audioFiles.length) args.push('-c:a', 'aac', '-b:a', '192k');
     args.push(choice.filePath);
     execFile(ffmpeg, args, async error => {
