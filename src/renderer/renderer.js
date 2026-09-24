@@ -81,6 +81,7 @@ let recordingWritePromise = Promise.resolve();
 let audioStopPromise = Promise.resolve();
 let selectedSourceId = null;
 let capturingHotkey = false;
+let isSaving = false;
 function showView(name) {
   Object.entries(views).forEach(([key, view]) => view.classList.toggle('hidden', key !== name));
 }
@@ -117,11 +118,13 @@ hotkeyButton.addEventListener('click', beginHotkeyCapture);
 document.querySelector('#refresh-sources').addEventListener('click', loadCaptureSources);
 document.querySelector('#refresh-audio').addEventListener('click', loadAudioApps);
 document.querySelector('#change-output-folder').addEventListener('click', chooseOutputFolder);
-window.clickfilm.onRecordingToggle(() => {
+window.clickfilm.onRecordingToggle(async () => {
   if (recorder?.state === 'recording') stopRecording();
   else if (!views.recording.classList.contains('hidden')) return;
   else if (!views.editor.classList.contains('hidden')) {
-    hotkeyStatus.textContent = tr('startNewFirst');
+    if (isSaving) return;
+    await resetProject(false);
+    startRecording();
   } else startRecording();
 });
 
@@ -359,6 +362,7 @@ function finishRecording() {
 async function exportVideo() {
   if (!rawRecordingBlob) return;
   const newButton = document.querySelector('#new-button');
+  isSaving = true;
   newButton.disabled = true;
   exportStatus.classList.remove('hidden');
   exportProgress.textContent = '0%';
@@ -382,13 +386,14 @@ async function exportVideo() {
     exportStatus.classList.add('hidden');
     alert(`${tr('exportFailed')}: ${error.message}`);
   } finally {
+    isSaving = false;
     newButton.disabled = false;
     exportStatus.querySelector('strong').textContent = 'Rendering your video…';
     exportStatus.querySelector('small').textContent = 'ClickFilm renders locally with FFmpeg. Keep the app open.';
   }
 }
 
-function resetProject() {
+async function resetProject(refreshLists = true) {
   playbackVideo.pause();
   playbackVideo.removeAttribute('src');
   playbackVideo.load();
@@ -396,10 +401,12 @@ function resetProject() {
   rawRecordingUrl = null;
   rawRecordingBlob = null;
   localRecordingPromise = null;
-  window.clickfilm.clearRecording().catch(() => {});
+  await window.clickfilm.clearRecording().catch(() => {});
   showView('welcome');
-  loadCaptureSources();
-  loadAudioApps();
+  if (refreshLists) {
+    loadCaptureSources();
+    loadAudioApps();
+  }
 }
 
 function formatTime(seconds) {
