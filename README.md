@@ -1,6 +1,6 @@
 # ClickFilm
 
-ClickFilm is a local-first Windows screen recorder that turns an ordinary recording into a polished product demo. Record naturally, add custom animated zooms in the editor, choose a presentation background, and export an MP4.
+ClickFilm is a local-first Windows screen recorder that captures a selected app in high quality, isolates audio from chosen applications, adds an optional presentation background, and exports an MP4.
 
 ## MVP features
 
@@ -8,8 +8,8 @@ ClickFilm is a local-first Windows screen recorder that turns an ordinary record
 - One selected window per recording
 - OBS-style app audio picker: include multiple apps and exclude all unselected sounds
 - Customisable global start/stop recording hotkey (`Ctrl+Shift+R` by default)
-- Manual zooms with editable focal point, start time, duration, and strength
-- Smooth animated zoom preview and timeline segments
+- Up to 4K/60 fps capture when supported by the selected window and system
+- High-bitrate VP9 source recording and high-quality H.264 export
 - Gradient or solid presentation backgrounds
 - No-background export at the recording's native resolution and aspect ratio
 - 16:9, 9:16, and 1:1 output formats
@@ -27,7 +27,7 @@ npm install
 npm start
 ```
 
-Click **Start recording**, choose a screen or window, and carry out the demonstration. Stop the recording, move the playhead to a moment you want to emphasize, and click **Add zoom**. Click the preview to set the focal point, then adjust the zoom's timing, duration, and strength before exporting.
+Click **Start recording**, choose a window and the applications whose audio should be included, then carry out the demonstration. Stop the recording, choose an optional background and output format, then export the high-quality MP4.
 
 To change the recording shortcut, click the hotkey shown below **Start recording** and press a new key combination. ClickFilm remembers it on that computer.
 
