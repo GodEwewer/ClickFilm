@@ -179,6 +179,26 @@ ipcMain.handle('recording:store', async (_event, bytes) => {
   return { ok: true };
 });
 
+ipcMain.handle('recording:begin-store', async () => {
+  if (currentRecordingFile) await fs.promises.unlink(currentRecordingFile).catch(() => {});
+  currentRecordingFile = path.join(os.tmpdir(), `clickfilm-source-${Date.now()}.webm`);
+  await fs.promises.writeFile(currentRecordingFile, Buffer.alloc(0));
+  return { ok: true };
+});
+
+ipcMain.handle('recording:append-store', async (_event, bytes) => {
+  if (!currentRecordingFile) throw new Error('The local recording file has not been created.');
+  await fs.promises.appendFile(currentRecordingFile, Buffer.from(bytes));
+  return { ok: true };
+});
+
+ipcMain.handle('recording:finish-store', async () => {
+  if (!currentRecordingFile) throw new Error('The local recording file is missing.');
+  const stats = await fs.promises.stat(currentRecordingFile);
+  if (!stats.size) throw new Error('The local recording file is empty.');
+  return { ok: true };
+});
+
 ipcMain.handle('recording:clear', async () => {
   if (currentRecordingFile) await fs.promises.unlink(currentRecordingFile).catch(() => {});
   currentRecordingFile = null;
@@ -202,14 +222,14 @@ ipcMain.handle('output:choose', async () => {
 
 ipcMain.handle('export:mp4', async (_event, payload) => {
   await fs.promises.mkdir(outputDirectory, { recursive: true });
-  const choice = await dialog.showSaveDialog(mainWindow, {
-    title: 'Save ClickFilm video',
-    defaultPath: path.join(outputDirectory, recordingFileName()),
-    filters: [{ name: 'MP4 video', extensions: ['mp4'] }]
-  });
-  if (choice.canceled || !choice.filePath) return { canceled: true };
-  outputDirectory = path.dirname(choice.filePath);
-  await savePreferences();
+  let outputFile = path.join(outputDirectory, recordingFileName());
+  if (fs.existsSync(outputFile)) {
+    const extension = path.extname(outputFile);
+    const base = outputFile.slice(0, -extension.length);
+    let copy = 2;
+    while (fs.existsSync(`${base}-${copy}${extension}`)) copy += 1;
+    outputFile = `${base}-${copy}${extension}`;
+  }
 
   const tempFile = currentRecordingFile || path.join(os.tmpdir(), `clickfilm-${Date.now()}.webm`);
   const bytes = payload?.bytes;
@@ -223,24 +243,25 @@ ipcMain.handle('export:mp4', async (_event, payload) => {
   return new Promise(resolve => {
     const args = ['-y', '-i', tempFile];
     audioFiles.forEach(file => args.push('-i', file));
-    const filters = buildVideoFilter();
+    const filters = [];
     if (audioFiles.length > 1) {
       const inputs = audioFiles.map((_file, index) => `[${index + 1}:a]`).join('');
       filters.push(`${inputs}amix=inputs=${audioFiles.length}:duration=longest:normalize=0[aout]`);
     }
-    args.push('-filter_complex', filters.join(';'), '-map', '[videoout]');
+    if (filters.length) args.push('-filter_complex', filters.join(';'));
+    args.push('-map', '0:v:0');
     if (audioFiles.length === 1) args.push('-map', '1:a:0');
     else if (audioFiles.length > 1) args.push('-map', '[aout]');
-    args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '16', '-profile:v', 'high', '-level', '5.2', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
+    args.push('-c:v', 'copy', '-movflags', '+faststart');
     if (audioFiles.length) args.push('-c:a', 'aac', '-b:a', '192k');
-    args.push(choice.filePath);
+    args.push(outputFile);
     execFile(ffmpeg, args, async error => {
       await fs.promises.unlink(tempFile).catch(() => {});
       if (tempFile === currentRecordingFile) currentRecordingFile = null;
       if (audioSessionDir) await fs.promises.rm(audioSessionDir, { recursive: true, force: true }).catch(() => {});
       audioSessionDir = null;
       if (error) resolve({ canceled: false, ok: false, error: error.message });
-      else resolve({ canceled: false, ok: true, path: choice.filePath });
+      else resolve({ canceled: false, ok: true, path: outputFile });
     });
   });
 });
