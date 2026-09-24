@@ -21,7 +21,7 @@ function recordingFileName(date = new Date()) {
   const year = String(date.getFullYear()).slice(-2);
   const hour = String(date.getHours()).padStart(2, '0');
   const minute = String(date.getMinutes()).padStart(2, '0');
-  return `ClickFilm-${day}.${month}.${year}-${hour}.${minute}.mp4`;
+  return `ClickFilm-DATE(${day}.${month}.${year})-TIME(${hour}.${minute}).mp4`;
 }
 
 async function savePreferences() {
