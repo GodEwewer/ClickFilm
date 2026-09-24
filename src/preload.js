@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('clickfilm', {
   stopAudioCapture: () => ipcRenderer.invoke('audio:stop'),
   storeRecording: bytes => ipcRenderer.invoke('recording:store', bytes),
   clearRecording: () => ipcRenderer.invoke('recording:clear'),
+  getOutputDirectory: () => ipcRenderer.invoke('output:get'),
+  chooseOutputDirectory: () => ipcRenderer.invoke('output:choose'),
   onRecordingToggle: callback => {
     const listener = () => callback();
     ipcRenderer.on('recording:toggle', listener);
