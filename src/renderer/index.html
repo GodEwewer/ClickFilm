@@ -17,7 +17,7 @@
         <div class="intro">
           <p class="eyebrow" data-i18n="eyebrow">SCREEN RECORDING, AUTOMATICALLY POLISHED</p>
           <h1><span class="hero-primary" data-i18n="hero1">Record normally.</span><br><span data-i18n="hero2">Look professionally edited.</span></h1>
-          <p data-i18n="intro">Record one app, then add precise, animated zooms exactly where you want them—without uploading your recording anywhere.</p>
+          <p data-i18n="intro">Record one app in high quality, choose exactly which app audio to include, and export locally without uploading anything.</p>
         </div>
 
         <div class="source-heading"><div><strong data-i18n="chooseWindow">Choose a window to record</strong><small data-i18n="chooseWindowHelp">Only this window will appear in the video</small></div><button id="refresh-sources" class="ghost-button" data-i18n="refresh">Refresh</button></div>
@@ -43,14 +43,14 @@
 
         <div class="steps">
           <div><b>01</b><strong data-i18n="step1">Record your screen</strong><span data-i18n="step1Help">Use your app naturally.</span></div>
-          <div><b>02</b><strong data-i18n="step2">Design your zooms</strong><span data-i18n="step2Help">Choose the area, timing, and strength.</span></div>
+          <div><b>02</b><strong data-i18n="step2">Keep every detail</strong><span data-i18n="step2Help">High-resolution, high-bitrate capture.</span></div>
           <div><b>03</b><strong data-i18n="step3">Export and share</strong><span data-i18n="step3Help">Ready-to-post MP4.</span></div>
         </div>
       </section>
 
       <section id="recording-view" class="recording-view hidden">
         <div class="recording-status"><span class="pulse"></span><strong data-i18n="recording">Recording</strong><time id="timer">00:00</time></div>
-        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption" data-i18n="recordNaturally">Record naturally — zooms are added later</div></div>
+        <div class="live-frame"><video id="live-video" autoplay muted></video><div class="live-caption" data-i18n="recordNaturally">High-quality recording in progress</div></div>
         <div class="recording-actions">
           <button id="stop-button" class="stop-button"><span></span><b data-i18n="stopRecording">Stop recording</b></button>
         </div>
@@ -84,32 +84,15 @@
               </div>
               <p class="setting-help background-help" data-i18n="noneHelp">Choose None to preserve the recording's native resolution and aspect ratio.</p>
             </div>
-            <div class="setting-group zoom-editor">
-              <div class="setting-heading"><label data-i18n="customZooms">Custom zooms</label><button id="add-zoom" class="mini-button" data-i18n="addZoom">+ Add zoom</button></div>
-              <p id="zoom-empty" class="setting-help" data-i18n="zoomHelp">Move the playhead, add a zoom, then click the preview to choose its focus.</p>
-              <div id="zoom-controls" class="zoom-controls hidden">
-                <label for="zoom-start"><span data-i18n="start">Start</span><output id="zoom-start-output">0:00.0</output></label>
-                <input id="zoom-start" type="range" min="0" max="1" value="0" step="0.1" />
-                <label for="zoom-duration"><span data-i18n="duration">Duration</span><output id="zoom-duration-output">1.5s</output></label>
-                <input id="zoom-duration" type="range" min="0.5" max="5" value="1.5" step="0.1" />
-                <label for="zoom-strength"><span data-i18n="strength">Strength</span><output id="zoom-output">1.65×</output></label>
-                <input id="zoom-strength" type="range" min="1.1" max="3" value="1.65" step="0.05" />
-                <button id="delete-zoom" class="delete-button" data-i18n="deleteZoom">Delete selected zoom</button>
-              </div>
-            </div>
             <div class="setting-group stats">
-              <span><strong id="zoom-count">0</strong> <b data-i18n="customZoomsStat">custom zooms</b></span>
               <span><strong id="duration-label">0:00</strong> <b data-i18n="durationStat">duration</b></span>
+              <span><strong data-i18n="qualityLabel">High</strong> <b data-i18n="qualityStat">recording quality</b></span>
             </div>
           </aside>
 
           <div class="preview-column">
             <div id="preview-stage" class="preview-stage aurora landscape">
-              <div id="video-window" class="video-window"><video id="playback-video" controls></video><div id="focus-target" class="focus-target hidden"><span></span></div></div>
-            </div>
-            <div class="timeline">
-              <div class="timeline-ruler"><span>0:00</span><span id="mid-time">0:00</span><span id="end-time">0:00</span></div>
-              <div id="marker-track" class="marker-track"><div id="playhead" class="playhead"></div></div>
+              <div id="video-window" class="video-window"><video id="playback-video" controls></video></div>
             </div>
           </div>
         </div>
@@ -117,7 +100,6 @@
       </section>
     </main>
 
-    <canvas id="render-canvas" hidden></canvas>
     <script src="renderer.js"></script>
   </body>
 </html>
