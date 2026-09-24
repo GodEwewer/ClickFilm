@@ -13,7 +13,7 @@ ClickFilm is a local-first Windows screen recorder that captures a selected app 
 - Native-resolution export that preserves the recorded window's aspect ratio
 - Audible start and stop recording cues
 - Persistent default save folder (`Videos\\ClickFilm` initially)
-- Date-and-time filenames such as `ClickFilm-24.09.26-22.35.mp4`
+- Date-and-time filenames such as `ClickFilm-DATE(24.09.26)-TIME(22.35).mp4`
 - Local MP4 rendering through FFmpeg
 - Faster-than-real-time local export without replaying the recording
 - No account, cloud upload, analytics, or paid API
