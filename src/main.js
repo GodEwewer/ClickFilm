@@ -15,13 +15,18 @@ let preferencesPath = null;
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
-function recordingFileName(date = new Date()) {
+function recordingFileName(applicationName = 'ClickFilm', date = new Date()) {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = String(date.getFullYear()).slice(-2);
   const hour = String(date.getHours()).padStart(2, '0');
   const minute = String(date.getMinutes()).padStart(2, '0');
-  return `ClickFilm-DATE(${day}.${month}.${year})-TIME(${hour}.${minute}).mp4`;
+  const safeName = String(applicationName || 'ClickFilm')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/[. ]+$/g, '')
+    .trim()
+    .slice(0, 80) || 'ClickFilm';
+  return `${safeName}-${day}.${month}.${year}-${hour}${minute}.mp4`;
 }
 
 async function savePreferences() {
@@ -222,7 +227,7 @@ ipcMain.handle('output:choose', async () => {
 
 ipcMain.handle('export:mp4', async (_event, payload) => {
   await fs.promises.mkdir(outputDirectory, { recursive: true });
-  let outputFile = path.join(outputDirectory, recordingFileName());
+  let outputFile = path.join(outputDirectory, recordingFileName(payload?.applicationName));
   if (fs.existsSync(outputFile)) {
     const extension = path.extname(outputFile);
     const base = outputFile.slice(0, -extension.length);
