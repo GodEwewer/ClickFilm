@@ -89,6 +89,7 @@ let localRecordingPromise;
 let recordingWritePromise = Promise.resolve();
 let audioStopPromise = Promise.resolve();
 let selectedSourceId = null;
+let selectedSourceName = 'ClickFilm';
 let capturingHotkey = false;
 let isSaving = false;
 function showView(name) {
@@ -216,6 +217,7 @@ async function selectCaptureSource(source, button) {
   const selected = await window.clickfilm.selectCaptureSource(source.id);
   if (!selected) return;
   selectedSourceId = source.id;
+  selectedSourceName = source.name;
   delete selectedSourceLabel.dataset.i18n;
   sourceList.querySelectorAll('.source-card').forEach(card => card.classList.toggle('selected', card === button));
   selectedSourceLabel.textContent = source.name;
@@ -381,7 +383,7 @@ async function exportVideo() {
     exportStatus.querySelector('small').textContent = tr('exportHelp');
     exportProgress.textContent = 'FAST';
     await localRecordingPromise;
-    const result = await window.clickfilm.exportMp4({});
+    const result = await window.clickfilm.exportMp4({ applicationName: selectedSourceName });
     if (result.ok) {
       exportStatus.querySelector('strong').textContent = tr('exportComplete');
       exportStatus.querySelector('small').textContent = result.path;
