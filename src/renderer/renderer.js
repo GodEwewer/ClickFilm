@@ -300,7 +300,7 @@ async function startRecording() {
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
       ? 'video/webm;codecs=vp9,opus'
       : 'video/webm';
-    recorder = new MediaRecorder(captureStream, { mimeType, videoBitsPerSecond: 24_000_000 });
+    recorder = new MediaRecorder(captureStream, { mimeType, videoBitsPerSecond: 50_000_000 });
     await window.clickfilm.beginRecordingStore();
     chunks = [];
     recordingWritePromise = Promise.resolve();
