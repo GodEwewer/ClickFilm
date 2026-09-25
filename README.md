@@ -2,6 +2,10 @@
 
 ClickFilm is a local-first Windows screen recorder that captures a selected app in high quality, isolates audio from chosen applications, and exports a full-resolution MP4.
 
+## Download
+
+Download the latest installer, portable executable, or ZIP from the [latest ClickFilm release](https://github.com/GodEwewer/ClickFilm/releases/latest).
+
 ## MVP features
 
 - Native screen or window picker
