@@ -1,66 +1,32 @@
 # ClickFilm
 
-ClickFilm is a local-first Windows screen recorder that captures a selected app in high quality, isolates audio from chosen applications, and exports a full-resolution MP4.
+ClickFilm is a simple Windows screen recorder. Record one selected app, include audio only from the apps you choose, and save everything locally as an MP4.
 
 ## Download
 
-Download the latest installer, portable executable, or ZIP from the [latest ClickFilm release](https://github.com/GodEwewer/ClickFilm/releases/latest).
+[Download the latest Windows version](https://github.com/GodEwewer/ClickFilm/releases/latest) as an installer, portable app, or ZIP.
 
-## MVP features
+## How to use
 
-- Native screen or window picker
-- One selected window per recording
-- OBS-style app audio picker: include multiple apps and exclude all unselected sounds
-- Customisable global start/stop recording hotkey (`Ctrl+Shift+R` by default)
-- Up to 4K/60 fps capture when supported by the selected window and system
-- Persistent High (24 Mbps) and Ultra (50 Mbps) VP9 quality options
-- Native-resolution export that preserves the recorded window's aspect ratio
-- Audible start and stop recording cues
-- Persistent default save folder (`Videos\\ClickFilm` initially)
-- Application, date, and time filenames such as `Albion Online-25.09.26-1312.mp4`
-- Automatic MP4 saving to the default folder when recording stops
-- Fast local finalisation that copies the video stream instead of re-rendering every frame
-- No account, cloud upload, analytics, or paid API
-- English, Simplified Chinese, and Traditional Chinese interface languages
+1. Select the window you want to record.
+2. Select one or more apps whose audio should be included.
+3. Choose **High (24 Mbps)** or **Ultra (50 Mbps)** quality.
+4. Start and stop recording with the button or your custom hotkey.
+5. The MP4 is saved automatically to your selected folder.
 
-## Run locally
+The default folder is `Videos\ClickFilm`. Recordings are named like `Albion Online-25.09.26-1312.mp4`.
 
-Requirements: Node.js 20+ and Windows 10 build 20348 or newer (Windows 11 recommended for per-app audio).
+ClickFilm supports English, Simplified Chinese, and Traditional Chinese. Recordings stay on your computer and are never uploaded.
+
+## Build from source
+
+Requires Node.js 20+ and Windows 10 build 20348 or newer. Windows 11 is recommended for per-app audio.
 
 ```bash
 npm install
 npm start
-```
-
-Click **Start recording**, choose a window and the applications whose audio should be included, then carry out the demonstration. ClickFilm plays a short cue when recording starts and stops. Review the result, then export the high-quality MP4.
-
-To change the recording shortcut, click the hotkey shown below **Start recording** and press a new key combination. ClickFilm remembers it on that computer.
-
-## Build the Windows installer
-
-```bash
-npm install
 npm run build:win
 ```
-
-The installer and portable executable are written to `release/`. The included GitHub Actions workflow also builds both files on a Windows runner.
-
-The Windows workflow compiles the bundled ApplicationLoopback helper before packaging. It uses Microsoft's Windows Process Loopback API to create one isolated WAV track per selected app. ClickFilm mixes those tracks locally during MP4 export.
-
-## Current MVP limitations
-
-- Primary-display recording gives the most accurate cursor alignment.
-- Export speed depends on resolution and edits, but it is no longer limited to the recording's duration.
-- Code signing is not configured, so Windows SmartScreen may warn about unsigned community builds.
-- Microphone and webcam tracks are planned for a later version.
-
-## Roadmap
-
-- Trimming and silence removal
-- Captions and microphone recording
-- Camera overlay
-- GIF export
-- Brand presets and 4K Pro exports
 
 ## License
 
