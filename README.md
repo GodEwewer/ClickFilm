@@ -9,7 +9,7 @@ ClickFilm is a local-first Windows screen recorder that captures a selected app 
 - OBS-style app audio picker: include multiple apps and exclude all unselected sounds
 - Customisable global start/stop recording hotkey (`Ctrl+Shift+R` by default)
 - Up to 4K/60 fps capture when supported by the selected window and system
-- High-bitrate VP9 source recording at up to 50 Mbps
+- Persistent High (24 Mbps) and Ultra (50 Mbps) VP9 quality options
 - Native-resolution export that preserves the recorded window's aspect ratio
 - Audible start and stop recording cues
 - Persistent default save folder (`Videos\\ClickFilm` initially)
