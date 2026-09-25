@@ -65,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && format('ClickFilm {0}', github.ref_name) || format('ClickFilm Windows Build #{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && format('ClickFilm {0}', github.ref_name) || format('ClickFilm Windows Build {0}', github.run_number) }}
           make_latest: true
           generate_release_notes: true
           files: |
