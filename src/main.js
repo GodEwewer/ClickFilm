@@ -149,7 +149,7 @@ ipcMain.handle('capture:select-source', (_event, sourceId) => {
 
 ipcMain.handle('audio:list-apps', async () => {
   if (process.platform !== 'win32') return [];
-  const script = `Get-Process | Where-Object { $_.MainWindowTitle -ne '' -and $_.Id -ne ${process.pid} } | Select-Object Id,ProcessName,MainWindowTitle | ConvertTo-Json -Compress`;
+  const script = `$sessionId = (Get-Process -Id $PID).SessionId; $excluded = @('Idle','System','Registry','smss','csrss','wininit','services','lsass','svchost','winlogon','fontdrvhost','dwm','Memory Compression','WUDFHost','conhost','audiodg','taskhostw','RuntimeBroker','SearchHost','StartMenuExperienceHost','ShellExperienceHost','TextInputHost','ApplicationFrameHost','explorer','powershell'); Get-Process | Where-Object { $_.Id -ne ${process.pid} -and $_.SessionId -eq $sessionId -and $_.ProcessName -notin $excluded } | Sort-Object ProcessName,Id -Unique | Select-Object Id,ProcessName,MainWindowTitle | ConvertTo-Json -Compress`;
   return new Promise(resolve => execFile('powershell.exe', ['-NoProfile', '-Command', script], { windowsHide: true }, (error, stdout) => {
     if (error || !stdout.trim()) return resolve([]);
     try {
