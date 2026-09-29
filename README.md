@@ -10,7 +10,7 @@ ClickFilm is a simple Windows screen recorder. Record one selected app, include 
 
 1. Select the window you want to record.
 2. Select one or more apps whose audio should be included.
-3. Choose **High (24 Mbps)** or **Ultra (50 Mbps)** quality.
+3. Choose **High (24 Mbps)** or **Ultra (80 Mbps)** quality.
 4. Start and stop recording with the button or your custom hotkey.
 5. The MP4 is saved automatically to your selected folder.
 
